@@ -1,9 +1,9 @@
 import { View, Text, StyleSheet } from 'react-native';
 
-export default function AdminDashboard() {
+export default function AdminScreen() {
   return (
     <View style={styles.container}>
-      <Text>Admin Dashboard - Teammate C starts here</Text>
+      <Text>Admin Screen - Teammate C starts here</Text>
     </View>
   );
 }
