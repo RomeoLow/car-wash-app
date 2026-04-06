@@ -1,17 +1,22 @@
 import React from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 
-export default function LoginScreen() {
+export default function LoginScreen({ onLogin }: any) {
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Welcome Back</Text>
-      <Text style={styles.subHeader}>Team A: Auth & Profile Section</Text>
-      
-      <TextInput style={styles.input} placeholder="Email" placeholderTextColor="#999" />
-      <TextInput style={styles.input} placeholder="Password" secureTextEntry={true} placeholderTextColor="#999" />
-      
-      <TouchableOpacity style={styles.button}>
-        <Text style={styles.buttonText}>Login</Text>
+      <Text style={styles.title}>Car Wash System</Text>
+      <Text style={styles.subtitle}>Select a Role to Login (Dev Mode)</Text>
+
+      <TouchableOpacity style={[styles.btn, {backgroundColor: '#2196F3'}]} onPress={() => onLogin('customer')}>
+        <Text style={styles.btnText}>Login as Customer</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={[styles.btn, {backgroundColor: '#4CAF50'}]} onPress={() => onLogin('worker')}>
+        <Text style={styles.btnText}>Login as Worker</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={[styles.btn, {backgroundColor: '#FF9800'}]} onPress={() => onLogin('admin')}>
+        <Text style={styles.btnText}>Login as Admin</Text>
       </TouchableOpacity>
     </View>
   );
@@ -19,9 +24,8 @@ export default function LoginScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: 'center', padding: 20, backgroundColor: '#fff' },
-  header: { fontSize: 28, fontWeight: 'bold', color: '#333', marginBottom: 5 },
-  subHeader: { fontSize: 14, color: '#666', marginBottom: 30 },
-  input: { borderWidth: 1, borderColor: '#ddd', padding: 15, borderRadius: 10, marginBottom: 15 },
-  button: { backgroundColor: '#2196F3', padding: 15, borderRadius: 10, alignItems: 'center' },
-  buttonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+  title: { fontSize: 32, fontWeight: 'bold', textAlign: 'center', marginBottom: 10 },
+  subtitle: { textAlign: 'center', marginBottom: 40, color: '#666' },
+  btn: { padding: 15, borderRadius: 10, marginBottom: 15, alignItems: 'center' },
+  btnText: { color: '#fff', fontWeight: 'bold' }
 });
