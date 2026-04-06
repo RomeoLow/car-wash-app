@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
+import { Alert, TouchableOpacity } from 'react-native';
 
-// Import Screens from their new folders
+// Import Screens from sub-folders
 import LoginScreen from './src/screens/auth/LoginScreen';
 import BookingScreen from './src/screens/customer/BookingScreen';
 import TaskQueueScreen from './src/screens/worker/TaskQueueScreen';
@@ -12,51 +13,67 @@ import AdminScreen from './src/screens/admin/AdminScreen';
 const Tab = createBottomTabNavigator();
 
 export default function App() {
-  // userRole can be: null (not logged in), 'customer', 'worker', or 'admin'
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState('');
 
-  // 1. If not logged in, only show the Login Screen
+  // Authentication Logic
+  const handleAuth = (email: string) => {
+    const lowerEmail = email.toLowerCase().trim();
+    if (!lowerEmail.includes('@')) {
+      Alert.alert("Error", "Please enter a valid email.");
+      return;
+    }
+
+    setUserEmail(lowerEmail);
+    if (lowerEmail === 'admin@carwash.com') {
+      setUserRole('admin');
+    } else if (lowerEmail.endsWith('@worker.com')) {
+      setUserRole('worker');
+    } else {
+      setUserRole('customer');
+    }
+  };
+
+  const handleLogout = () => {
+    setUserRole(null);
+    setUserEmail('');
+  };
+
   if (!userRole) {
-    return <LoginScreen onLogin={(role: string) => setUserRole(role)} />;
+    return <LoginScreen onLogin={handleAuth} />;
   }
 
-  // 2. If logged in, show the specific Tab Base
   return (
     <NavigationContainer>
       <Tab.Navigator
         screenOptions={{
           tabBarActiveTintColor: '#2196F3',
           headerRight: () => (
-            <Ionicons 
-              name="log-out-outline" 
-              size={24} 
-              style={{ marginRight: 15 }} 
-              onPress={() => setUserRole(null)} 
-            />
+            <TouchableOpacity onPress={handleLogout} style={{ marginRight: 15 }}>
+              <Ionicons name="log-out-outline" size={24} color="red" />
+            </TouchableOpacity>
           ),
         }}
       >
         {userRole === 'customer' && (
           <Tab.Screen 
-            name="CustomerHome" 
+            name="Booking" 
             component={BookingScreen} 
-            options={{ title: 'Book a Wash', tabBarIcon: ({color}) => <Ionicons name="car" size={20} color={color}/> }} 
+            options={{ title: 'Book Wash', tabBarIcon: ({color}) => <Ionicons name="car" size={24} color={color}/> }} 
           />
         )}
-
         {userRole === 'worker' && (
           <Tab.Screen 
-            name="WorkerHome" 
+            name="Tasks" 
             component={TaskQueueScreen} 
-            options={{ title: 'Job Queue', tabBarIcon: ({color}) => <Ionicons name="list" size={20} color={color}/> }} 
+            options={{ title: 'Job Queue', tabBarIcon: ({color}) => <Ionicons name="list" size={24} color={color}/> }} 
           />
         )}
-
         {userRole === 'admin' && (
           <Tab.Screen 
-            name="AdminHome" 
+            name="Admin" 
             component={AdminScreen} 
-            options={{ title: 'Dashboard', tabBarIcon: ({color}) => <Ionicons name="stats-chart" size={20} color={color}/> }} 
+            options={{ title: 'Dashboard', tabBarIcon: ({color}) => <Ionicons name="stats-chart" size={24} color={color}/> }} 
           />
         )}
       </Tab.Navigator>
