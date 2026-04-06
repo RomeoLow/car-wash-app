@@ -4,9 +4,10 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 
 // Import Screen Files
-import LoginScreen from './src/screens/LoginScreen';
-import BookingScreen from './src/screens/BookingScreen';
-import AdminScreen from './src/screens/AdminScreen';
+import LoginScreen from './src/screens/auth/LoginScreen';
+import BookingScreen from './src/screens/customer/BookingScreen';
+import AdminScreen from './src/screens/admin/AdminScreen';
+import TaskQueueScreen from './src/screens/worker/TaskQueueScreen';
 
 const Tab = createBottomTabNavigator();
 
