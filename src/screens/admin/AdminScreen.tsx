@@ -1,36 +1,19 @@
 import React from 'react';
-import { View, Text, StyleSheet, FlatList } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 
 export default function AdminScreen() {
-  const activeOrders = [
-    { id: '1', car: 'Proton Saga', status: 'In Progress' },
-    { id: '2', car: 'Honda Civic', status: 'Waiting' },
-  ];
-
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Admin Dashboard</Text>
-      <Text style={styles.subHeader}>Team C: Management Section</Text>
-
-      <FlatList
-        data={activeOrders}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={styles.orderItem}>
-            <Text style={styles.carName}>{item.car}</Text>
-            <Text style={styles.status}>{item.status}</Text>
-          </View>
-        )}
-      />
+      <Text style={styles.header}>Business Insights</Text>
+      <View style={styles.placeholderCard}>
+        <Text>Member 3: Add daily revenue & staff management here</Text>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, backgroundColor: '#fff' },
-  header: { fontSize: 24, fontWeight: 'bold', color: '#ff9800' },
-  subHeader: { fontSize: 14, color: '#666', marginBottom: 20 },
-  orderItem: { padding: 15, borderBottomWidth: 1, borderBottomColor: '#eee', flexDirection: 'row', justifyContent: 'space-between' },
-  carName: { fontSize: 16 },
-  status: { color: '#ff9800', fontWeight: '600' },
+  header: { fontSize: 24, fontWeight: 'bold', color: '#FF9800', marginBottom: 20 },
+  placeholderCard: { padding: 40, backgroundColor: '#fff8f0', borderRadius: 10, borderStyle: 'dashed', borderWidth: 1, borderColor: '#ccc', alignItems: 'center' }
 });
