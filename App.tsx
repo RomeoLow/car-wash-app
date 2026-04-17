@@ -1,82 +1,71 @@
-import React, { useState } from 'react';
-import { NavigationContainer } from '@react-navigation/native';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Ionicons } from '@expo/vector-icons';
-import { Alert, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { ActivityIndicator, View } from 'react-native';
+import { auth, db } from './firebaseConfig';
+import { onAuthStateChanged } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 
-// Import Screens from sub-folders
+// Screen Imports (Make sure these paths match your folder structure)
 import LoginScreen from './src/screens/auth/LoginScreen';
+import AdminScreen from './src/screens/admin/AdminScreen';
 import BookingScreen from './src/screens/customer/BookingScreen';
 import TaskQueueScreen from './src/screens/worker/TaskQueueScreen';
-import AdminScreen from './src/screens/admin/AdminScreen';
-
-const Tab = createBottomTabNavigator();
 
 export default function App() {
-  const [userRole, setUserRole] = useState<string | null>(null);
-  const [userEmail, setUserEmail] = useState('');
+  const [user, setUser] = useState<any>(null);
+  const [role, setRole] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Authentication Logic
-  const handleAuth = (email: string) => {
-    const lowerEmail = email.toLowerCase().trim();
-    if (!lowerEmail.includes('@')) {
-      Alert.alert("Error", "Please enter a valid email.");
-      return;
-    }
+  useEffect(() => {
+    // 1. Real-time listener for Auth state
+    const unsubscribe = onAuthStateChanged(auth, async (authenticatedUser) => {
+      if (authenticatedUser) {
+        try {
+          // 2. Fetch user role from Firestore
+          const userDoc = await getDoc(doc(db, "users", authenticatedUser.uid));
+          
+          if (userDoc.exists()) {
+            setRole(userDoc.data().role); // Sets 'admin', 'worker', or 'customer'
+          } else {
+            setRole('customer'); // Default if no doc exists
+          }
+          setUser(authenticatedUser);
+        } catch (error) {
+          console.error("Error fetching user role:", error);
+        }
+      } else {
+        // Reset states on logout
+        setUser(null);
+        setRole(null);
+      }
+      setLoading(false);
+    });
 
-    setUserEmail(lowerEmail);
-    if (lowerEmail === 'admin@carwash.com') {
-      setUserRole('admin');
-    } else if (lowerEmail.endsWith('@worker.com')) {
-      setUserRole('worker');
-    } else {
-      setUserRole('customer');
-    }
-  };
+    return unsubscribe; // Cleanup listener
+  }, []);
 
-  const handleLogout = () => {
-    setUserRole(null);
-    setUserEmail('');
-  };
-
-  if (!userRole) {
-    return <LoginScreen onLogin={handleAuth} />;
+  // Show a loading spinner while checking login status
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#2196F3" />
+      </View>
+    );
   }
 
-  return (
-    <NavigationContainer>
-      <Tab.Navigator
-        screenOptions={{
-          tabBarActiveTintColor: '#2196F3',
-          headerRight: () => (
-            <TouchableOpacity onPress={handleLogout} style={{ marginRight: 15 }}>
-              <Ionicons name="log-out-outline" size={24} color="red" />
-            </TouchableOpacity>
-          ),
-        }}
-      >
-        {userRole === 'customer' && (
-          <Tab.Screen 
-            name="Booking" 
-            component={BookingScreen} 
-            options={{ title: 'Book Wash', tabBarIcon: ({color}) => <Ionicons name="car" size={24} color={color}/> }} 
-          />
-        )}
-        {userRole === 'worker' && (
-          <Tab.Screen 
-            name="Tasks" 
-            component={TaskQueueScreen} 
-            options={{ title: 'Job Queue', tabBarIcon: ({color}) => <Ionicons name="list" size={24} color={color}/> }} 
-          />
-        )}
-        {userRole === 'admin' && (
-          <Tab.Screen 
-            name="Admin" 
-            component={AdminScreen} 
-            options={{ title: 'Dashboard', tabBarIcon: ({color}) => <Ionicons name="stats-chart" size={24} color={color}/> }} 
-          />
-        )}
-      </Tab.Navigator>
-    </NavigationContainer>
-  );
+  // 3. Conditional Rendering (The "Who is Who" logic)
+  if (!user) {
+    return <LoginScreen />;
+  }
+
+  // Once logged in, show the screen based on their role
+  switch (role) {
+    case 'admin':
+      return <AdminScreen />;
+    case 'worker':
+      return <TaskQueueScreen />;
+    case 'customer':
+      return <BookingScreen />;
+    default:
+      return <BookingScreen />; // Safety fallback
+  }
 }
