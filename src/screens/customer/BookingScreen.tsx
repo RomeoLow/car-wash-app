@@ -1,9 +1,12 @@
-// screens/BookingScreen.js
+// screens/BookingScreen.tsx
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
-  ScrollView, StyleSheet, SafeAreaView,
+  ScrollView, StyleSheet, SafeAreaView, Platform, KeyboardAvoidingView
 } from 'react-native';
+import { auth } from '../../../firebaseConfig';
+import { signOut } from 'firebase/auth';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 const SIZES = ['S', 'M', 'L', 'XL', 'XXL'];
 
@@ -21,134 +24,181 @@ const EXTRAS = [
   { id: 'e3', name: 'Fogging', prices: { S: 25, M: 25, L: 25, XL: 25, XXL: 30 } },
 ];
 
-export default function BookingScreen({ navigation }) {
-  const [plate, setPlate] = useState('');
-  const [size, setSize] = useState(null);
-  const [service, setService] = useState(null);
-  const [extras, setExtras] = useState([]);
+type BookingScreenProps = {
+  navigation: NativeStackNavigationProp<any>;
+};
 
-  const toggleExtra = (id) =>
+export default function BookingScreen({ navigation }: BookingScreenProps) {
+  const [plate, setPlate] = useState('');
+  const [size, setSize] = useState<'S' | 'M' | 'L' | 'XL' | 'XXL' | null>(null);
+  const [service, setService] = useState<typeof SERVICES[number] | null>(null);
+  const [extras, setExtras] = useState<string[]>([]);
+
+  const handleLogout = () => signOut(auth);
+
+  // Added string type to id to fix TypeScript warning
+  const toggleExtra = (id: string) =>
     setExtras(prev => prev.includes(id) ? prev.filter(e => e !== id) : [...prev, id]);
 
   const basePrice = service && size ? (service.prices[size] ?? null) : null;
-  const extraTotal = extras.reduce((sum, id) => {
+  const extraTotal = size ? extras.reduce((sum, id) => {
     const ex = EXTRAS.find(e => e.id === id);
     return sum + (ex?.prices[size] ?? 0);
-  }, 0);
+  }, 0) : 0;
   const total = basePrice != null ? basePrice + extraTotal : null;
 
   const ready = plate.trim().length > 0 && size && service && basePrice != null;
 
   return (
     <SafeAreaView style={s.safe}>
-      <Text style={s.title}>New Booking</Text>
-
-      <ScrollView contentContainerStyle={s.scroll}>
-
-        {/* Plate */}
-        <Text style={s.label}>Car Plate Number</Text>
-        <View style={s.inputRow}>
-          <Text style={s.inputIcon}>🚗</Text>
-          <TextInput
-            style={s.input}
-            placeholder="e.g. JHF 1234"
-            placeholderTextColor="#5A5A78"
-            autoCapitalize="characters"
-            maxLength={10}
-            value={plate}
-            onChangeText={setPlate}
-          />
+      {/* Wrapped in KeyboardAvoidingView to prevent keyboard from covering the button */}
+      <KeyboardAvoidingView 
+        style={s.safe} 
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        {/* ── Header ── */}
+        <View style={s.header}>
+          <Text style={s.appTitle}>My Car Wash</Text>
+          <TouchableOpacity onPress={handleLogout} style={s.logoutBtn}>
+            <Text style={s.logoutText}>Logout</Text>
+          </TouchableOpacity>
         </View>
 
-        {/* Car Size */}
-        <Text style={s.label}>Car Size</Text>
-        <View style={s.sizeRow}>
-          {SIZES.map(sz => (
-            <TouchableOpacity
-              key={sz}
-              style={[s.sizeBtn, size === sz && s.sizeBtnActive]}
-              onPress={() => { setSize(sz); setService(null); setExtras([]); }}
-            >
-              <Text style={[s.sizeTxt, size === sz && s.sizeTxtActive]}>{sz}</Text>
-            </TouchableOpacity>
-          ))}
+        {/* ── Welcome Banner ── */}
+        <View style={s.banner}>
+          <Text style={s.welcome}>Hello, {auth.currentUser?.displayName || 'Customer'}!</Text>
+          <Text style={s.subtitle}>Keep your car shining today.</Text>
         </View>
 
-        {/* Services */}
-        <Text style={s.label}>Select Service</Text>
-        {SERVICES.map(sv => {
-          const price = size ? sv.prices[size] : null;
-          const unavailable = size && price === null;
-          return (
-            <TouchableOpacity
-              key={sv.id}
-              style={[s.card, { borderLeftColor: sv.color }, service?.id === sv.id && s.cardActive, unavailable && s.cardDim]}
-              onPress={() => !unavailable && setService(sv)}
-              activeOpacity={unavailable ? 1 : 0.8}
-            >
-              <Text style={s.cardIcon}>{sv.icon}</Text>
-              <Text style={[s.cardName, unavailable && s.dimText]}>{sv.name}</Text>
-              <Text style={[s.cardPrice, unavailable && s.dimText]}>
-                {unavailable ? 'N/A' : size ? `RM ${price}` : '—'}
-              </Text>
-              {service?.id === sv.id && <Text style={s.check}>✓</Text>}
-            </TouchableOpacity>
-          );
-        })}
+        {/* ── Booking Form ── */}
+        <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
+          <Text style={s.pageTitle}>New Booking</Text>
 
-        {/* Extra Services */}
-        {size && (
-          <>
-            <Text style={s.label}>Extra Services</Text>
-            {EXTRAS.map(ex => {
-              const price = ex.prices[size];
-              const unavailable = price === null;
-              const active = extras.includes(ex.id);
-              return (
-                <TouchableOpacity
-                  key={ex.id}
-                  style={[s.extraRow, active && s.extraActive, unavailable && s.cardDim]}
-                  onPress={() => !unavailable && toggleExtra(ex.id)}
-                  activeOpacity={unavailable ? 1 : 0.8}
-                >
-                  <Text style={[s.extraName, unavailable && s.dimText]}>{ex.name}</Text>
-                  <Text style={[s.extraPrice, unavailable && s.dimText]}>
-                    {unavailable ? 'N/A' : `+RM ${price}`}
-                  </Text>
-                  {active && <Text style={s.check}> ✓</Text>}
-                </TouchableOpacity>
-              );
-            })}
-          </>
-        )}
+          {/* Plate */}
+          <Text style={s.label}>Car Plate Number</Text>
+          <View style={s.inputRow}>
+            <Text style={s.inputIcon}>🚗</Text>
+            <TextInput
+              style={s.input}
+              placeholder="e.g. JHF 1234"
+              placeholderTextColor="#5A5A78"
+              autoCapitalize="characters"
+              maxLength={10}
+              value={plate}
+              // Automatically formats to uppercase
+              onChangeText={(text) => setPlate(text.toUpperCase())}
+            />
+          </View>
 
-      </ScrollView>
+          {/* Car Size */}
+          <Text style={s.label}>Car Size</Text>
+          <View style={s.sizeRow}>
+            {SIZES.map(sz => (
+              <TouchableOpacity
+                key={sz}
+                style={[s.sizeBtn, size === sz && s.sizeBtnActive]}
+                // Clears selections so a user can't accidentally keep a null-priced service
+                onPress={() => { setSize(sz as any); setService(null); setExtras([]); }}
+              >
+                <Text style={[s.sizeTxt, size === sz && s.sizeTxtActive]}>{sz}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
 
-      {/* Bottom Bar */}
-      <View style={s.bottom}>
-        <View style={s.summary}>
-          <Text style={s.summaryLabel}>
-            {service ? `${service.name} · ${size}` : 'No service selected'}
-          </Text>
-          <Text style={s.summaryPrice}>
-            {total != null ? `RM ${total}` : '—'}
-          </Text>
+          {/* Services */}
+          <Text style={s.label}>Select Service</Text>
+          {SERVICES.map(sv => {
+            const price = size ? sv.prices[size as keyof typeof sv.prices] : null;
+            const unavailable = size && price === null;
+            return (
+              <TouchableOpacity
+                key={sv.id}
+                style={[s.card, { borderLeftColor: sv.color }, service?.id === sv.id && s.cardActive, unavailable && s.cardDim]}
+                onPress={() => !unavailable && setService(sv)}
+                activeOpacity={unavailable ? 1 : 0.8}
+              >
+                <Text style={s.cardIcon}>{sv.icon}</Text>
+                <Text style={[s.cardName, unavailable && s.dimText]}>{sv.name}</Text>
+                <Text style={[s.cardPrice, unavailable && s.dimText]}>
+                  {unavailable ? 'N/A' : size ? `RM ${price}` : '—'}
+                </Text>
+                {service?.id === sv.id && <Text style={s.check}>✓</Text>}
+              </TouchableOpacity>
+            );
+          })}
+
+          {/* Extra Services */}
+          {size && (
+            <>
+              <Text style={s.label}>Extra Services</Text>
+              {EXTRAS.map(ex => {
+                const price = ex.prices[size as keyof typeof ex.prices];
+                const unavailable = price === null;
+                const active = extras.includes(ex.id);
+                return (
+                  <TouchableOpacity
+                    key={ex.id}
+                    style={[s.extraRow, active && s.extraActive, unavailable && s.cardDim]}
+                    onPress={() => !unavailable && toggleExtra(ex.id)}
+                    activeOpacity={unavailable ? 1 : 0.8}
+                  >
+                    <Text style={[s.extraName, unavailable && s.dimText]}>{ex.name}</Text>
+                    <Text style={[s.extraPrice, unavailable && s.dimText]}>
+                      {unavailable ? 'N/A' : `+RM ${price}`}
+                    </Text>
+                    {active && <Text style={s.check}> ✓</Text>}
+                  </TouchableOpacity>
+                );
+              })}
+            </>
+          )}
+
+        </ScrollView>
+
+        {/* ── Bottom Bar ── */}
+        <View style={s.bottom}>
+          <View style={s.summary}>
+            <Text style={s.summaryLabel}>
+              {service ? `${service.name} · ${size}` : 'No service selected'}
+            </Text>
+            <Text style={s.summaryPrice}>
+              {total != null ? `RM ${total}` : '—'}
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={[s.btn, !ready && s.btnOff]}
+            disabled={!ready}
+            onPress={() => {
+              if (service) { // Added null check for safety
+                navigation.navigate('HistoryScreen', { 
+                  plate: plate.trim(), 
+                  size, 
+                  serviceName: service.name, 
+                  total 
+                });
+              }
+            }}
+          >
+            <Text style={s.btnText}>{ready ? 'Confirm Booking →' : 'Fill in details'}</Text>
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity
-          style={[s.btn, !ready && s.btnOff]}
-          disabled={!ready}
-          onPress={() => navigation.navigate('HistoryScreen', { plate, size, service: service.name, total })}
-        >
-          <Text style={s.btnText}>{ready ? 'Confirm Booking →' : 'Fill in details'}</Text>
-        </TouchableOpacity>
-      </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#0F0F1A' },
-  title: { fontSize: 22, fontWeight: '800', color: '#fff', padding: 20, paddingBottom: 0 },
+
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 12, backgroundColor: '#1C1C2E' },
+  appTitle: { fontSize: 20, fontWeight: 'bold', color: '#5B8DEF' },
+  logoutBtn: { paddingVertical: 4, paddingHorizontal: 10, borderRadius: 8, backgroundColor: '#2E1A1A' },
+  logoutText: { color: '#F87171', fontWeight: 'bold', fontSize: 13 },
+  banner: { paddingVertical: 18, paddingHorizontal: 20, backgroundColor: '#5B8DEF' },
+  welcome: { fontSize: 20, fontWeight: 'bold', color: '#fff' },
+  subtitle: { fontSize: 13, color: '#D1E4FF', marginTop: 3 },
+
+  pageTitle: { fontSize: 22, fontWeight: '800', color: '#fff', marginBottom: 4 },
   scroll: { padding: 20, paddingBottom: 180 },
   label: { fontSize: 11, fontWeight: '700', color: '#9090A8', letterSpacing: 1, textTransform: 'uppercase', marginTop: 24, marginBottom: 10 },
 
