@@ -2,10 +2,12 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
-  ScrollView, StyleSheet, SafeAreaView, Platform, KeyboardAvoidingView
+  ScrollView, StyleSheet, SafeAreaView, Platform, 
+  KeyboardAvoidingView, Alert, ActivityIndicator
 } from 'react-native';
-import { auth } from '../../../firebaseConfig';
+import { auth, db } from '../../../firebaseConfig';
 import { signOut } from 'firebase/auth';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 const SIZES = ['S', 'M', 'L', 'XL', 'XXL'];
@@ -33,6 +35,7 @@ export default function BookingScreen({ navigation }: BookingScreenProps) {
   const [size, setSize] = useState<'S' | 'M' | 'L' | 'XL' | 'XXL' | null>(null);
   const [service, setService] = useState<typeof SERVICES[number] | null>(null);
   const [extras, setExtras] = useState<string[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleLogout = () => signOut(auth);
 
@@ -49,11 +52,56 @@ export default function BookingScreen({ navigation }: BookingScreenProps) {
 
   const ready = plate.trim().length > 0 && size && service && basePrice != null;
 
+  // ── New Database Save Function ──
+  const handleBooking = async () => {
+    if (!ready || !service || !auth.currentUser) return;
+
+    setIsSubmitting(true);
+
+    try {
+      const bookingData = {
+        userId: auth.currentUser.uid,
+        customerName: auth.currentUser.displayName || 'Customer',
+        plate: plate.trim(),
+        size: size,
+        serviceId: service.id,
+        serviceName: service.name,
+        extras: extras,
+        totalPrice: total,
+        status: 'Pending',
+        createdAt: serverTimestamp(),
+      };
+
+      // Save to 'bookings' collection in Firestore
+      await addDoc(collection(db, 'bookings'), bookingData);
+
+      // Navigate to History Screen
+      navigation.navigate('HistoryScreen', {
+        plate: plate.trim(),
+        size,
+        serviceName: service.name,
+        total
+      });
+
+      // Reset form (optional, but good UX if they come back to this screen)
+      setPlate('');
+      setSize(null);
+      setService(null);
+      setExtras([]);
+
+    } catch (error) {
+      console.error("Error saving booking: ", error);
+      Alert.alert("Booking Failed", "There was an issue saving your booking. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <SafeAreaView style={s.safe}>
       {/* Wrapped in KeyboardAvoidingView to prevent keyboard from covering the button */}
-      <KeyboardAvoidingView 
-        style={s.safe} 
+      <KeyboardAvoidingView
+        style={s.safe}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         {/* ── Header ── */}
@@ -166,20 +214,15 @@ export default function BookingScreen({ navigation }: BookingScreenProps) {
             </Text>
           </View>
           <TouchableOpacity
-            style={[s.btn, !ready && s.btnOff]}
-            disabled={!ready}
-            onPress={() => {
-              if (service) { // Added null check for safety
-                navigation.navigate('HistoryScreen', { 
-                  plate: plate.trim(), 
-                  size, 
-                  serviceName: service.name, 
-                  total 
-                });
-              }
-            }}
+            style={[s.btn, (!ready || isSubmitting) && s.btnOff]}
+            disabled={!ready || isSubmitting}
+            onPress={handleBooking}
           >
-            <Text style={s.btnText}>{ready ? 'Confirm Booking →' : 'Fill in details'}</Text>
+            {isSubmitting ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={s.btnText}>{ready ? 'Confirm Booking →' : 'Fill in details'}</Text>
+            )}
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
