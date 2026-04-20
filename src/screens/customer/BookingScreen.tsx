@@ -1,10 +1,11 @@
-// screens/BookingScreen.tsx
+// src/screens/customer/BookingScreen.tsx
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
-  ScrollView, StyleSheet, SafeAreaView, Platform, 
+  ScrollView, StyleSheet, Platform, StatusBar,
   KeyboardAvoidingView, Alert, ActivityIndicator
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { auth, db } from '../../../firebaseConfig';
 import { signOut } from 'firebase/auth';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
@@ -31,6 +32,13 @@ type BookingScreenProps = {
 };
 
 export default function BookingScreen({ navigation }: BookingScreenProps) {
+  // Safe Area Logic
+  const insets = useSafeAreaInsets();
+  const safeTop = Math.max(
+    insets.top, 
+    Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 48
+  );
+
   const [plate, setPlate] = useState('');
   const [size, setSize] = useState<'S' | 'M' | 'L' | 'XL' | 'XXL' | null>(null);
   const [service, setService] = useState<typeof SERVICES[number] | null>(null);
@@ -39,7 +47,6 @@ export default function BookingScreen({ navigation }: BookingScreenProps) {
 
   const handleLogout = () => signOut(auth);
 
-  // Added string type to id to fix TypeScript warning
   const toggleExtra = (id: string) =>
     setExtras(prev => prev.includes(id) ? prev.filter(e => e !== id) : [...prev, id]);
 
@@ -52,10 +59,8 @@ export default function BookingScreen({ navigation }: BookingScreenProps) {
 
   const ready = plate.trim().length > 0 && size && service && basePrice != null;
 
-  // ── New Database Save Function ──
   const handleBooking = async () => {
     if (!ready || !service || !auth.currentUser) return;
-
     setIsSubmitting(true);
 
     try {
@@ -72,10 +77,9 @@ export default function BookingScreen({ navigation }: BookingScreenProps) {
         createdAt: serverTimestamp(),
       };
 
-      // Save to 'bookings' collection in Firestore
       await addDoc(collection(db, 'bookings'), bookingData);
 
-      // Navigate to History Screen
+      // Now navigation is properly passed by the Stack Navigator in App.tsx!
       navigation.navigate('HistoryScreen', {
         plate: plate.trim(),
         size,
@@ -83,7 +87,6 @@ export default function BookingScreen({ navigation }: BookingScreenProps) {
         total
       });
 
-      // Reset form (optional, but good UX if they come back to this screen)
       setPlate('');
       setSize(null);
       setService(null);
@@ -98,27 +101,24 @@ export default function BookingScreen({ navigation }: BookingScreenProps) {
   };
 
   return (
-    <SafeAreaView style={s.safe}>
-      {/* Wrapped in KeyboardAvoidingView to prevent keyboard from covering the button */}
+    <View style={s.safe}>
       <KeyboardAvoidingView
         style={s.safe}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        {/* ── Header ── */}
-        <View style={s.header}>
+        {/* Header with dynamic safe top padding */}
+        <View style={[s.header, { paddingTop: safeTop + 12 }]}>
           <Text style={s.appTitle}>My Car Wash</Text>
           <TouchableOpacity onPress={handleLogout} style={s.logoutBtn}>
             <Text style={s.logoutText}>Logout</Text>
           </TouchableOpacity>
         </View>
 
-        {/* ── Welcome Banner ── */}
         <View style={s.banner}>
           <Text style={s.welcome}>Hello, {auth.currentUser?.displayName || 'Customer'}!</Text>
           <Text style={s.subtitle}>Keep your car shining today.</Text>
         </View>
 
-        {/* ── Booking Form ── */}
         <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
           <Text style={s.pageTitle}>New Booking</Text>
 
@@ -133,19 +133,17 @@ export default function BookingScreen({ navigation }: BookingScreenProps) {
               autoCapitalize="characters"
               maxLength={10}
               value={plate}
-              // Automatically formats to uppercase
               onChangeText={(text) => setPlate(text.toUpperCase())}
             />
           </View>
 
-          {/* Car Size */}
+          {/* Size */}
           <Text style={s.label}>Car Size</Text>
           <View style={s.sizeRow}>
             {SIZES.map(sz => (
               <TouchableOpacity
                 key={sz}
                 style={[s.sizeBtn, size === sz && s.sizeBtnActive]}
-                // Clears selections so a user can't accidentally keep a null-priced service
                 onPress={() => { setSize(sz as any); setService(null); setExtras([]); }}
               >
                 <Text style={[s.sizeTxt, size === sz && s.sizeTxtActive]}>{sz}</Text>
@@ -153,7 +151,7 @@ export default function BookingScreen({ navigation }: BookingScreenProps) {
             ))}
           </View>
 
-          {/* Services */}
+          {/* Service */}
           <Text style={s.label}>Select Service</Text>
           {SERVICES.map(sv => {
             const price = size ? sv.prices[size as keyof typeof sv.prices] : null;
@@ -175,7 +173,7 @@ export default function BookingScreen({ navigation }: BookingScreenProps) {
             );
           })}
 
-          {/* Extra Services */}
+          {/* Extras */}
           {size && (
             <>
               <Text style={s.label}>Extra Services</Text>
@@ -200,10 +198,8 @@ export default function BookingScreen({ navigation }: BookingScreenProps) {
               })}
             </>
           )}
-
         </ScrollView>
 
-        {/* ── Bottom Bar ── */}
         <View style={s.bottom}>
           <View style={s.summary}>
             <Text style={s.summaryLabel}>
@@ -226,35 +222,30 @@ export default function BookingScreen({ navigation }: BookingScreenProps) {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#0F0F1A' },
-
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 12, backgroundColor: '#1C1C2E' },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingBottom: 12, backgroundColor: '#1C1C2E' },
   appTitle: { fontSize: 20, fontWeight: 'bold', color: '#5B8DEF' },
   logoutBtn: { paddingVertical: 4, paddingHorizontal: 10, borderRadius: 8, backgroundColor: '#2E1A1A' },
   logoutText: { color: '#F87171', fontWeight: 'bold', fontSize: 13 },
   banner: { paddingVertical: 18, paddingHorizontal: 20, backgroundColor: '#5B8DEF' },
   welcome: { fontSize: 20, fontWeight: 'bold', color: '#fff' },
   subtitle: { fontSize: 13, color: '#D1E4FF', marginTop: 3 },
-
   pageTitle: { fontSize: 22, fontWeight: '800', color: '#fff', marginBottom: 4 },
   scroll: { padding: 20, paddingBottom: 180 },
   label: { fontSize: 11, fontWeight: '700', color: '#9090A8', letterSpacing: 1, textTransform: 'uppercase', marginTop: 24, marginBottom: 10 },
-
   inputRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#1C1C2E', borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14, borderWidth: 1, borderColor: '#2E2E4E', gap: 12 },
   inputIcon: { fontSize: 20 },
   input: { flex: 1, fontSize: 18, fontWeight: '700', color: '#fff', letterSpacing: 2 },
-
   sizeRow: { flexDirection: 'row', gap: 10 },
   sizeBtn: { flex: 1, paddingVertical: 12, borderRadius: 12, backgroundColor: '#1C1C2E', borderWidth: 1, borderColor: '#2E2E4E', alignItems: 'center' },
   sizeBtnActive: { backgroundColor: '#5B8DEF', borderColor: '#5B8DEF' },
   sizeTxt: { fontSize: 14, fontWeight: '700', color: '#9090A8' },
   sizeTxtActive: { color: '#fff' },
-
   card: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#1C1C2E', borderRadius: 14, padding: 16, marginBottom: 10, borderWidth: 1, borderColor: '#2E2E4E', borderLeftWidth: 4, gap: 12 },
   cardActive: { borderColor: '#5B8DEF', backgroundColor: '#1A1A35' },
   cardDim: { opacity: 0.35 },
@@ -263,12 +254,10 @@ const s = StyleSheet.create({
   cardPrice: { fontSize: 16, fontWeight: '800', color: '#fff' },
   dimText: { color: '#5A5A78' },
   check: { fontSize: 14, color: '#34D399', fontWeight: '700' },
-
   extraRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#1C1C2E', borderRadius: 12, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: '#2E2E4E' },
   extraActive: { borderColor: '#34D399', backgroundColor: '#0D2018' },
   extraName: { flex: 1, fontSize: 14, fontWeight: '600', color: '#fff' },
   extraPrice: { fontSize: 14, fontWeight: '700', color: '#9090A8' },
-
   bottom: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: '#0F0F1A', borderTopWidth: 1, borderTopColor: '#1C1C2E', padding: 20, paddingBottom: 32 },
   summary: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
   summaryLabel: { fontSize: 13, color: '#9090A8', fontWeight: '600' },
