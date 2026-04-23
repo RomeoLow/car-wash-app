@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
-  ScrollView, StyleSheet, SafeAreaView, Platform, 
+  ScrollView, StyleSheet, SafeAreaView, Platform,
   KeyboardAvoidingView, Alert, ActivityIndicator
 } from 'react-native';
 import { auth, db } from '../../../firebaseConfig';
@@ -10,21 +10,29 @@ import { signOut } from 'firebase/auth';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
-const SIZES = ['S', 'M', 'L', 'XL', 'XXL'];
+const SIZES = [
+  { key: 'S',   label: 'S',   title: 'Mini',  example: 'Myvi, Axia, Swift, Kancil' },
+  { key: 'M',   label: 'M',   title: 'Sedan', example: 'Vios, City, Civic, Saga' },
+  { key: 'L',   label: 'L',   title: 'SUV',   example: 'HR-V, CR-V, Sportage, Tucson' },
+  { key: 'XL',  label: 'XL',  title: 'MPV',   example: 'Vellfire, Serena, Innova, Starrex' },
+  { key: 'XXL', label: 'XXL', title: 'Van',   example: 'Hiace, Transit' },
+];
 
 const SERVICES = [
-  { id: '1', icon: '🚿', name: 'Normal Wash', prices: { S: 12, M: 15, L: 18, XL: 20, XXL: 30 }, color: '#5B8DEF' },
-  { id: '2', icon: '✨', name: 'Water Wax', prices: { S: 25, M: 30, L: 35, XL: 40, XXL: 60 }, color: '#A78BFA' },
-  { id: '3', icon: '🌫️', name: 'Water Wax & Fogging Package', prices: { S: 45, M: 50, L: 60, XL: 70, XXL: 80 }, color: '#34D399' },
-  { id: '4', icon: '🪣', name: 'Wax', prices: { S: 120, M: 150, L: 200, XL: 250, XXL: null }, color: '#FB923C' },
-  { id: '5', icon: '💎', name: 'Polish', prices: { S: 300, M: 350, L: 400, XL: 450, XXL: 600 }, color: '#F472B6' },
+  { id: '1', icon: '🚿', name: 'Normal Wash',                  prices: { S: 12,  M: 15,  L: 18,  XL: 20,  XXL: 30  }, color: '#5B8DEF' },
+  { id: '2', icon: '✨', name: 'Water Wax',                    prices: { S: 25,  M: 30,  L: 35,  XL: 40,  XXL: 60  }, color: '#A78BFA' },
+  { id: '3', icon: '🌫️', name: 'Water Wax & Fogging Package',  prices: { S: 45,  M: 50,  L: 60,  XL: 70,  XXL: 80  }, color: '#34D399' },
+  { id: '4', icon: '🪣', name: 'Wax',                          prices: { S: 120, M: 150, L: 200, XL: 250, XXL: null }, color: '#FB923C' },
+  { id: '5', icon: '💎', name: 'Polish',                        prices: { S: 300, M: 350, L: 400, XL: 450, XXL: 600 }, color: '#F472B6' },
 ];
 
 const EXTRAS = [
-  { id: 'e1', name: 'Interior Wax', prices: { S: 50, M: 50, L: 50, XL: 80, XXL: 80 } },
-  { id: 'e2', name: 'Wash Engine', prices: { S: 25, M: 25, L: 25, XL: 25, XXL: 30 } },
-  { id: 'e3', name: 'Fogging', prices: { S: 25, M: 25, L: 25, XL: 25, XXL: 30 } },
+  { id: 'e1', name: 'Interior Wax',  prices: { S: 50, M: 50, L: 50, XL: 80, XXL: 80 } },
+  { id: 'e2', name: 'Wash Engine',   prices: { S: 25, M: 25, L: 25, XL: 25, XXL: 30 } },
+  { id: 'e3', name: 'Fogging',       prices: { S: 25, M: 25, L: 25, XL: 25, XXL: 30 } },
 ];
+
+type SizeKey = 'S' | 'M' | 'L' | 'XL' | 'XXL';
 
 type BookingScreenProps = {
   navigation: NativeStackNavigationProp<any>;
@@ -32,14 +40,13 @@ type BookingScreenProps = {
 
 export default function BookingScreen({ navigation }: BookingScreenProps) {
   const [plate, setPlate] = useState('');
-  const [size, setSize] = useState<'S' | 'M' | 'L' | 'XL' | 'XXL' | null>(null);
+  const [size, setSize] = useState<SizeKey | null>(null);
   const [service, setService] = useState<typeof SERVICES[number] | null>(null);
   const [extras, setExtras] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleLogout = () => signOut(auth);
 
-  // Added string type to id to fix TypeScript warning
   const toggleExtra = (id: string) =>
     setExtras(prev => prev.includes(id) ? prev.filter(e => e !== id) : [...prev, id]);
 
@@ -52,46 +59,38 @@ export default function BookingScreen({ navigation }: BookingScreenProps) {
 
   const ready = plate.trim().length > 0 && size && service && basePrice != null;
 
-  // ── New Database Save Function ──
   const handleBooking = async () => {
-    if (!ready || !service || !auth.currentUser) return;
+    if (!ready || !service || !size || !auth.currentUser) return;
 
     setIsSubmitting(true);
-
     try {
-      const bookingData = {
+      await addDoc(collection(db, 'bookings'), {
         userId: auth.currentUser.uid,
         customerName: auth.currentUser.displayName || 'Customer',
         plate: plate.trim(),
-        size: size,
+        size,
         serviceId: service.id,
         serviceName: service.name,
-        extras: extras,
+        extras,
         totalPrice: total,
         status: 'Pending',
         createdAt: serverTimestamp(),
-      };
+      });
 
-      // Save to 'bookings' collection in Firestore
-      await addDoc(collection(db, 'bookings'), bookingData);
-
-      // Navigate to History Screen
       navigation.navigate('HistoryScreen', {
         plate: plate.trim(),
         size,
         serviceName: service.name,
-        total
+        total,
       });
 
-      // Reset form (optional, but good UX if they come back to this screen)
       setPlate('');
       setSize(null);
       setService(null);
       setExtras([]);
-
     } catch (error) {
-      console.error("Error saving booking: ", error);
-      Alert.alert("Booking Failed", "There was an issue saving your booking. Please try again.");
+      console.error('Error saving booking:', error);
+      Alert.alert('Booking Failed', 'There was an issue saving your booking. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -99,7 +98,6 @@ export default function BookingScreen({ navigation }: BookingScreenProps) {
 
   return (
     <SafeAreaView style={s.safe}>
-      {/* Wrapped in KeyboardAvoidingView to prevent keyboard from covering the button */}
       <KeyboardAvoidingView
         style={s.safe}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -133,22 +131,26 @@ export default function BookingScreen({ navigation }: BookingScreenProps) {
               autoCapitalize="characters"
               maxLength={10}
               value={plate}
-              // Automatically formats to uppercase
               onChangeText={(text) => setPlate(text.toUpperCase())}
             />
           </View>
 
           {/* Car Size */}
           <Text style={s.label}>Car Size</Text>
-          <View style={s.sizeRow}>
+          <Text style={s.sizeHint}>Not sure? Pick the type that matches your car below.</Text>
+          <View style={s.sizeGrid}>
             {SIZES.map(sz => (
               <TouchableOpacity
-                key={sz}
-                style={[s.sizeBtn, size === sz && s.sizeBtnActive]}
-                // Clears selections so a user can't accidentally keep a null-priced service
-                onPress={() => { setSize(sz as any); setService(null); setExtras([]); }}
+                key={sz.key}
+                style={[s.sizeCard, size === sz.key && s.sizeCardActive]}
+                onPress={() => { setSize(sz.key as SizeKey); setService(null); setExtras([]); }}
               >
-                <Text style={[s.sizeTxt, size === sz && s.sizeTxtActive]}>{sz}</Text>
+                {/* ✅ Fixed: View wrapper for proper vertical centering */}
+                <View style={[s.sizeBadgeWrap, size === sz.key && s.sizeBadgeWrapActive]}>
+                  <Text style={[s.sizeBadge, size === sz.key && s.sizeBadgeActive]}>{sz.label}</Text>
+                </View>
+                <Text style={[s.sizeTitle, size === sz.key && s.sizeTitleActive]}>{sz.title}</Text>
+                <Text style={[s.sizeExample, size === sz.key && s.sizeExampleActive]}>{sz.example}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -161,7 +163,12 @@ export default function BookingScreen({ navigation }: BookingScreenProps) {
             return (
               <TouchableOpacity
                 key={sv.id}
-                style={[s.card, { borderLeftColor: sv.color }, service?.id === sv.id && s.cardActive, unavailable && s.cardDim]}
+                style={[
+                  s.card,
+                  { borderLeftColor: sv.color },
+                  service?.id === sv.id && s.cardActive,
+                  unavailable && s.cardDim,
+                ]}
                 onPress={() => !unavailable && setService(sv)}
                 activeOpacity={unavailable ? 1 : 0.8}
               >
@@ -225,6 +232,7 @@ export default function BookingScreen({ navigation }: BookingScreenProps) {
             )}
           </TouchableOpacity>
         </View>
+
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -233,6 +241,7 @@ export default function BookingScreen({ navigation }: BookingScreenProps) {
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#0F0F1A' },
 
+  // Header & Banner
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 12, backgroundColor: '#1C1C2E' },
   appTitle: { fontSize: 20, fontWeight: 'bold', color: '#5B8DEF' },
   logoutBtn: { paddingVertical: 4, paddingHorizontal: 10, borderRadius: 8, backgroundColor: '#2E1A1A' },
@@ -241,20 +250,34 @@ const s = StyleSheet.create({
   welcome: { fontSize: 20, fontWeight: 'bold', color: '#fff' },
   subtitle: { fontSize: 13, color: '#D1E4FF', marginTop: 3 },
 
+  // Booking Form
   pageTitle: { fontSize: 22, fontWeight: '800', color: '#fff', marginBottom: 4 },
   scroll: { padding: 20, paddingBottom: 180 },
   label: { fontSize: 11, fontWeight: '700', color: '#9090A8', letterSpacing: 1, textTransform: 'uppercase', marginTop: 24, marginBottom: 10 },
 
+  // Plate Input
   inputRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#1C1C2E', borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14, borderWidth: 1, borderColor: '#2E2E4E', gap: 12 },
   inputIcon: { fontSize: 20 },
   input: { flex: 1, fontSize: 18, fontWeight: '700', color: '#fff', letterSpacing: 2 },
 
-  sizeRow: { flexDirection: 'row', gap: 10 },
-  sizeBtn: { flex: 1, paddingVertical: 12, borderRadius: 12, backgroundColor: '#1C1C2E', borderWidth: 1, borderColor: '#2E2E4E', alignItems: 'center' },
-  sizeBtnActive: { backgroundColor: '#5B8DEF', borderColor: '#5B8DEF' },
-  sizeTxt: { fontSize: 14, fontWeight: '700', color: '#9090A8' },
-  sizeTxtActive: { color: '#fff' },
+  // Car Size Cards
+  sizeHint: { fontSize: 12, color: '#9090A8', marginBottom: 12, fontStyle: 'italic' },
+  sizeGrid: { gap: 10 },
+  sizeCard: { backgroundColor: '#1C1C2E', borderRadius: 14, borderWidth: 1, borderColor: '#2E2E4E', paddingVertical: 12, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  sizeCardActive: { backgroundColor: '#1A1A35', borderColor: '#5B8DEF' },
 
+  // ✅ Fixed badge: View wrapper handles centering
+  sizeBadgeWrap: { width: 44, height: 44, borderRadius: 10, backgroundColor: '#2E2E4E', justifyContent: 'center', alignItems: 'center' },
+  sizeBadgeWrapActive: { backgroundColor: '#5B8DEF' },
+  sizeBadge: { fontSize: 13, fontWeight: '800', color: '#9090A8' },
+  sizeBadgeActive: { color: '#fff' },
+
+  sizeTitle: { fontSize: 15, fontWeight: '700', color: '#fff', width: 52 },
+  sizeTitleActive: { color: '#5B8DEF' },
+  sizeExample: { flex: 1, fontSize: 12, color: '#9090A8', flexWrap: 'wrap' },
+  sizeExampleActive: { color: '#A0B8FF' },
+
+  // Service Cards
   card: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#1C1C2E', borderRadius: 14, padding: 16, marginBottom: 10, borderWidth: 1, borderColor: '#2E2E4E', borderLeftWidth: 4, gap: 12 },
   cardActive: { borderColor: '#5B8DEF', backgroundColor: '#1A1A35' },
   cardDim: { opacity: 0.35 },
@@ -264,11 +287,13 @@ const s = StyleSheet.create({
   dimText: { color: '#5A5A78' },
   check: { fontSize: 14, color: '#34D399', fontWeight: '700' },
 
+  // Extra Services
   extraRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#1C1C2E', borderRadius: 12, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: '#2E2E4E' },
   extraActive: { borderColor: '#34D399', backgroundColor: '#0D2018' },
   extraName: { flex: 1, fontSize: 14, fontWeight: '600', color: '#fff' },
   extraPrice: { fontSize: 14, fontWeight: '700', color: '#9090A8' },
 
+  // Bottom Bar
   bottom: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: '#0F0F1A', borderTopWidth: 1, borderTopColor: '#1C1C2E', padding: 20, paddingBottom: 32 },
   summary: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
   summaryLabel: { fontSize: 13, color: '#9090A8', fontWeight: '600' },
