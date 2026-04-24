@@ -1,14 +1,22 @@
+// App.tsx
 import React, { useState, useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { auth, db } from './firebaseConfig';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 
-// Screen Imports (Make sure these paths match your folder structure)
+// Screen Imports
 import LoginScreen from './src/screens/auth/LoginScreen';
 import AdminScreen from './src/screens/admin/AdminScreen';
 import BookingScreen from './src/screens/customer/BookingScreen';
 import TaskQueueScreen from './src/screens/worker/TaskQueueScreen';
+// Make sure to import HistoryScreen so BookingScreen can navigate to it!
+import HistoryScreen from './src/screens/customer/HistoryScreen'; 
+
+const Stack = createNativeStackNavigator();
 
 export default function App() {
   const [user, setUser] = useState<any>(null);
@@ -16,56 +24,67 @@ export default function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 1. Real-time listener for Auth state
     const unsubscribe = onAuthStateChanged(auth, async (authenticatedUser) => {
       if (authenticatedUser) {
         try {
-          // 2. Fetch user role from Firestore
           const userDoc = await getDoc(doc(db, "users", authenticatedUser.uid));
-          
           if (userDoc.exists()) {
-            setRole(userDoc.data().role); // Sets 'admin', 'worker', or 'customer'
+            setRole(userDoc.data().role);
           } else {
-            setRole('customer'); // Default if no doc exists
+            setRole('customer');
           }
           setUser(authenticatedUser);
         } catch (error) {
           console.error("Error fetching user role:", error);
         }
       } else {
-        // Reset states on logout
         setUser(null);
         setRole(null);
       }
       setLoading(false);
     });
 
-    return unsubscribe; // Cleanup listener
+    return unsubscribe;
   }, []);
 
-  // Show a loading spinner while checking login status
   if (loading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#2196F3" />
+        <ActivityIndicator size="large" color="#5B8DEF" />
       </View>
     );
   }
 
-  // 3. Conditional Rendering (The "Who is Who" logic)
-  if (!user) {
-    return <LoginScreen />;
-  }
+  return (
+    <SafeAreaProvider>
+      <NavigationContainer>
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          
+          {/* If Not Logged In */}
+          {!user ? (
+            <Stack.Screen name="Login" component={LoginScreen} />
+          ) : 
+          
+          /* If Logged In as Admin */
+          role === 'admin' ? (
+            <Stack.Screen name="AdminHome" component={AdminScreen} />
+          ) : 
+          
+          /* If Logged In as Worker */
+          role === 'worker' ? (
+            <Stack.Screen name="WorkerHome" component={TaskQueueScreen} />
+          ) : 
+          
+          /* If Logged In as Customer (Default) */
+          (
+            <>
+              <Stack.Screen name="BookingScreen" component={BookingScreen} />
+              <Stack.Screen name="HistoryScreen" component={HistoryScreen} />
+            </>
+          )}
 
-  // Once logged in, show the screen based on their role
-  switch (role) {
-    case 'admin':
-      return <AdminScreen />;
-    case 'worker':
-      return <TaskQueueScreen />;
-    case 'customer':
-      return <BookingScreen />;
-    default:
-      return <BookingScreen />; // Safety fallback
-  }
+        </Stack.Navigator>
+      </NavigationContainer>
+    </SafeAreaProvider>
+  );
 }
