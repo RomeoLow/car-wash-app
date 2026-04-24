@@ -3,7 +3,8 @@ import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
   ScrollView, StyleSheet, SafeAreaView, Platform, 
-  KeyboardAvoidingView, Alert, ActivityIndicator
+  KeyboardAvoidingView, Alert, ActivityIndicator,
+  StatusBar
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { auth, db } from '../../../firebaseConfig';
@@ -72,7 +73,7 @@ export default function BookingScreen({ navigation }: BookingScreenProps) {
 
     setIsSubmitting(true);
     try {
-      await addDoc(collection(db, 'bookings'), {
+      const bookingData = {
         userId: auth.currentUser.uid,
         customerName: auth.currentUser.displayName || 'Customer',
         plate: plate.trim(),
@@ -107,6 +108,9 @@ export default function BookingScreen({ navigation }: BookingScreenProps) {
       setIsSubmitting(false);
     }
   };
+
+  // Get selected size info
+  const selectedSizeInfo = size ? SIZES.find(sz => sz.key === size) : null;
 
   return (
     <SafeAreaView style={s.safe}>
@@ -149,18 +153,25 @@ export default function BookingScreen({ navigation }: BookingScreenProps) {
           {/* Size */}
           <Text style={s.label}>Car Size</Text>
           <Text style={s.sizeHint}>Not sure? Pick the type that matches your car below.</Text>
-          <View style={s.sizeGrid}>
+          <View style={s.sizeRow}>
             {SIZES.map(sz => (
               <TouchableOpacity
-                key={sz}
-                style={[s.sizeBtn, size === sz && s.sizeBtnActive]}
-                // Clears selections so a user can't accidentally keep a null-priced service
-                onPress={() => { setSize(sz as any); setService(null); setExtras([]); }}
+                key={sz.key}
+                style={[s.sizeBtn, size === sz.key && s.sizeBtnActive]}
+                onPress={() => { setSize(sz.key as SizeKey); setService(null); setExtras([]); }}
               >
-                <Text style={[s.sizeTxt, size === sz && s.sizeTxtActive]}>{sz}</Text>
+                <Text style={[s.sizeTxt, size === sz.key && s.sizeTxtActive]}>{sz.label}</Text>
               </TouchableOpacity>
             ))}
           </View>
+
+          {/* Size info card — shows after selecting a size */}
+          {selectedSizeInfo && (
+            <View style={s.sizeInfo}>
+              <Text style={s.sizeInfoTitle}>🚘 {selectedSizeInfo.title}</Text>
+              <Text style={s.sizeInfoExample}>{selectedSizeInfo.example}</Text>
+            </View>
+          )}
 
           {/* Service */}
           <Text style={s.label}>Select Service</Text>
@@ -239,7 +250,7 @@ export default function BookingScreen({ navigation }: BookingScreenProps) {
         </View>
 
       </KeyboardAvoidingView>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -262,11 +273,17 @@ const s = StyleSheet.create({
   inputIcon: { fontSize: 20 },
   input: { flex: 1, fontSize: 18, fontWeight: '700', color: '#fff', letterSpacing: 2 },
 
+  sizeHint: { fontSize: 12, color: '#9090A8', marginBottom: 10 },
   sizeRow: { flexDirection: 'row', gap: 10 },
   sizeBtn: { flex: 1, paddingVertical: 12, borderRadius: 12, backgroundColor: '#1C1C2E', borderWidth: 1, borderColor: '#2E2E4E', alignItems: 'center' },
   sizeBtnActive: { backgroundColor: '#5B8DEF', borderColor: '#5B8DEF' },
   sizeTxt: { fontSize: 14, fontWeight: '700', color: '#9090A8' },
   sizeTxtActive: { color: '#fff' },
+
+  // NEW: Size info card
+  sizeInfo: { marginTop: 10, backgroundColor: '#1C1C2E', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: '#2E2E4E' },
+  sizeInfoTitle: { fontSize: 14, fontWeight: '700', color: '#5B8DEF', marginBottom: 2 },
+  sizeInfoExample: { fontSize: 12, color: '#9090A8' },
 
   card: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#1C1C2E', borderRadius: 14, padding: 16, marginBottom: 10, borderWidth: 1, borderColor: '#2E2E4E', borderLeftWidth: 4, gap: 12 },
   cardActive: { borderColor: '#5B8DEF', backgroundColor: '#1A1A35' },
