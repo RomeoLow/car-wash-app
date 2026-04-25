@@ -12,9 +12,10 @@ import { doc, getDoc } from 'firebase/firestore';
 import LoginScreen from './src/screens/auth/LoginScreen';
 import AdminScreen from './src/screens/admin/AdminScreen';
 import BookingScreen from './src/screens/customer/BookingScreen';
+import HistoryScreen from './src/screens/customer/HistoryScreen';
+import ProfileScreen from './src/screens/customer/ProfileScreen';
 import TaskQueueScreen from './src/screens/worker/TaskQueueScreen';
-// Make sure to import HistoryScreen so BookingScreen can navigate to it!
-import HistoryScreen from './src/screens/customer/HistoryScreen'; 
+import JobDetailScreen from './src/screens/worker/JobDetailScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -59,27 +60,31 @@ export default function App() {
     <SafeAreaProvider>
       <NavigationContainer>
         <Stack.Navigator screenOptions={{ headerShown: false }}>
-          
+
           {/* If Not Logged In */}
           {!user ? (
             <Stack.Screen name="Login" component={LoginScreen} />
-          ) : 
-          
+          ) :
+
           /* If Logged In as Admin */
           role === 'admin' ? (
             <Stack.Screen name="AdminHome" component={AdminScreen} />
-          ) : 
-          
+          ) :
+
           /* If Logged In as Worker */
           role === 'worker' ? (
-            <Stack.Screen name="WorkerHome" component={TaskQueueScreen} />
-          ) : 
-          
+            <>
+              <Stack.Screen name="WorkerHome" component={TaskQueueScreen} />
+              <Stack.Screen name="JobDetailScreen" component={JobDetailScreen} />
+            </>
+          ) :
+
           /* If Logged In as Customer (Default) */
           (
             <>
               <Stack.Screen name="BookingScreen" component={BookingScreen} />
               <Stack.Screen name="HistoryScreen" component={HistoryScreen} />
+              <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
             </>
           )}
 

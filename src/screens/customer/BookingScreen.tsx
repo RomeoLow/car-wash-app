@@ -2,11 +2,11 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
-  ScrollView, StyleSheet, SafeAreaView, Platform, 
+  ScrollView, StyleSheet, Platform, 
   KeyboardAvoidingView, Alert, ActivityIndicator,
   StatusBar
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { auth, db } from '../../../firebaseConfig';
 import { signOut } from 'firebase/auth';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
@@ -122,9 +122,14 @@ export default function BookingScreen({ navigation }: BookingScreenProps) {
         {/* Header with dynamic safe top padding */}
         <View style={[s.header, { paddingTop: safeTop + 12 }]}>
           <Text style={s.appTitle}>My Car Wash</Text>
-          <TouchableOpacity onPress={handleLogout} style={s.logoutBtn}>
-            <Text style={s.logoutText}>Logout</Text>
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <TouchableOpacity onPress={() => navigation.navigate('ProfileScreen')} style={s.profileBtn}>
+              <Text style={s.profileBtnText}>👤</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleLogout} style={s.logoutBtn}>
+              <Text style={s.logoutText}>Logout</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         <View style={s.banner}>
@@ -259,6 +264,8 @@ const s = StyleSheet.create({
 
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 12, backgroundColor: '#1C1C2E' },
   appTitle: { fontSize: 20, fontWeight: 'bold', color: '#5B8DEF' },
+  profileBtn: { paddingVertical: 4, paddingHorizontal: 10, borderRadius: 8, backgroundColor: '#1C1C2E', borderWidth: 1, borderColor: '#2E2E4E' },
+  profileBtnText: { fontSize: 16 },
   logoutBtn: { paddingVertical: 4, paddingHorizontal: 10, borderRadius: 8, backgroundColor: '#2E1A1A' },
   logoutText: { color: '#F87171', fontWeight: 'bold', fontSize: 13 },
   banner: { paddingVertical: 18, paddingHorizontal: 20, backgroundColor: '#5B8DEF' },
