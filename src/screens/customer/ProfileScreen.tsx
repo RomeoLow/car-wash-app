@@ -27,7 +27,7 @@ function getInitials(name: string) {
   return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 }
 
-export default function ProfileScreen() {
+export default function ProfileScreen({ navigation }: any) {
   const user = auth.currentUser;
   const displayName = user?.displayName || 'Customer';
   const email = user?.email || '';
@@ -140,6 +140,14 @@ export default function ProfileScreen() {
           </View>
         </View>
 
+        {/* My Bookings */}
+        <Text style={s.sectionLabel}>Quick Actions</Text>
+        <TouchableOpacity style={s.historyBtn} onPress={() => navigation.navigate('HistoryScreen')}>
+          <Text style={s.historyBtnIcon}>📋</Text>
+          <Text style={s.historyBtnText}>View My Bookings</Text>
+          <Text style={s.historyBtnArrow}>→</Text>
+        </TouchableOpacity>
+
         {/* Logout */}
         <TouchableOpacity style={s.logoutBtn} onPress={handleLogout}>
           <Text style={s.logoutText}>🚪  Logout</Text>
@@ -201,6 +209,15 @@ const s = StyleSheet.create({
   infoLabel: { fontSize: 11, color: '#9090A8', fontWeight: '600', marginBottom: 2 },
   infoValue: { fontSize: 14, color: '#fff', fontWeight: '600' },
   infoDivider: { height: 1, backgroundColor: '#2E2E4E', marginHorizontal: 16 },
+
+  historyBtn: {
+    marginHorizontal: 16, marginBottom: 12, borderRadius: 14, paddingVertical: 16,
+    paddingHorizontal: 20, backgroundColor: '#1C1C2E', borderWidth: 1, borderColor: '#2E2E4E',
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+  },
+  historyBtnIcon: { fontSize: 18 },
+  historyBtnText: { flex: 1, color: '#fff', fontWeight: '700', fontSize: 15 },
+  historyBtnArrow: { color: '#5B8DEF', fontSize: 18, fontWeight: '700' },
 
   logoutBtn: {
     marginHorizontal: 16, borderRadius: 14, paddingVertical: 16,
