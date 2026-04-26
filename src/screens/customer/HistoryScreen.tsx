@@ -6,7 +6,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { auth, db } from '../../../firebaseConfig';
-import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
 
 type Booking = {
   id: string;
@@ -75,16 +75,28 @@ export default function HistoryScreen({ navigation }: any) {
 
   useEffect(() => {
     if (!auth.currentUser) return;
+    
+    // Removed the 'orderBy' to fix the Firebase composite index error
     const q = query(
       collection(db, 'bookings'),
-      where('userId', '==', auth.currentUser.uid),
-      orderBy('createdAt', 'desc')
+      where('userId', '==', auth.currentUser.uid)
     );
+    
     const unsub = onSnapshot(q, snap => {
-      setBookings(snap.docs.map(d => ({ id: d.id, ...d.data() } as Booking)));
+      let fetchedBookings = snap.docs.map(d => ({ id: d.id, ...d.data() } as Booking));
+      
+      // Sort the bookings locally (newest first)
+      fetchedBookings.sort((a, b) => {
+        const dateA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : new Date(a.createdAt).getTime();
+        const dateB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : new Date(b.createdAt).getTime();
+        return dateB - dateA; 
+      });
+
+      setBookings(fetchedBookings);
       setLoading(false);
       setRefreshing(false);
     });
+    
     return unsub;
   }, []);
 
