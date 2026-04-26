@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { auth } from '../../../firebaseConfig';
 import { signOut } from 'firebase/auth';
@@ -26,6 +27,17 @@ export default function AdminScreen({ navigation }: any) {
     { id: 'reports', label: 'Reports', icon: '📊', screen: 'RevenueReports' },
     { id: 'settings', label: 'Settings', icon: '⚙️', screen: 'ServiceSettings' },
   ];
+// Assuming you are using React Navigation
+export default function AdminScreen({ navigation }: any) {
+  const handleLogout = () => signOut(auth);
+
+  // Assuming you are using React Navigation
+  const menuItems = [
+    { id: 'revenue', label: 'Daily Revenue', icon: '💰', screen: 'RevenueReports' },
+    { id: 'staff', label: 'Manage Staff', icon: '👥', screen: 'StaffManagement' },
+    { id: 'reports', label: 'Reports', icon: '📊', screen: 'RevenueReports' }, // You can also jump to the same or different reports.
+    { id: 'settings', label: 'Settings', icon: '⚙️', screen: 'ServiceSettings' },
+  ];
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -33,6 +45,7 @@ export default function AdminScreen({ navigation }: any) {
         style={styles.container}
         showsVerticalScrollIndicator={false}
       >
+      <ScrollView style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.badgeContainer}>
@@ -62,6 +75,16 @@ export default function AdminScreen({ navigation }: any) {
         </View>
 
         {/* Feature Grid Entry */}
+        {/* Statistics Overview Area (Makes the page look more professional) */}
+        <View style={styles.overviewCard}>
+          <Text style={styles.overviewTitle}>Today's Status</Text>
+          <View style={styles.overviewRow}>
+            <Text style={styles.overviewItem}>Active Jobs: <Text style={styles.bold}>8</Text></Text>
+            <Text style={styles.overviewItem}>Staff Online: <Text style={styles.bold}>3</Text></Text>
+          </View>
+        </View>
+
+        {/* Function Grid */}
         <View style={styles.grid}>
           {menuItems.map((item) => (
             <TouchableOpacity 
@@ -73,6 +96,7 @@ export default function AdminScreen({ navigation }: any) {
                   navigation.navigate(item.screen);
                 }
               }}
+              onPress={() => item.screen && navigation.navigate(item.screen)}
             >
               <View style={styles.iconContainer}>
                 <Text style={styles.icon}>{item.icon}</Text>
@@ -95,6 +119,8 @@ const styles = StyleSheet.create({
     flex: 1, 
     paddingHorizontal: 20 
   },
+  safe: { flex: 1, backgroundColor: '#F0F2F5' },
+  container: { flex: 1, paddingHorizontal: 20 },
   header: { 
     flexDirection: 'row', 
     justifyContent: 'space-between', 
@@ -105,6 +131,10 @@ const styles = StyleSheet.create({
   badgeContainer: { 
     alignSelf: 'flex-start' 
   },
+    marginTop: 20, 
+    marginBottom: 20 
+  },
+  badgeContainer: { alignSelf: 'flex-start' },
   adminBadge: { 
     backgroundColor: '#673AB7', 
     color: '#fff', 
@@ -179,6 +209,32 @@ const styles = StyleSheet.create({
     width: '47%', 
     backgroundColor: '#fff', 
     paddingVertical: 25, 
+  logoutText: { color: '#F44336', fontWeight: 'bold', fontSize: 16 },
+  greeting: { fontSize: 28, fontWeight: 'bold', color: '#1A1A1A', marginBottom: 20 },
+  
+  // Overview Card
+  overviewCard: {
+    backgroundColor: '#673AB7',
+    padding: 20,
+    borderRadius: 20,
+    marginBottom: 25,
+    elevation: 4,
+    shadowColor: '#673AB7',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  overviewTitle: { color: 'rgba(255,255,255,0.8)', fontSize: 14, marginBottom: 10 },
+  overviewRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  overviewItem: { color: '#fff', fontSize: 16 },
+  bold: { fontWeight: 'bold', fontSize: 18 },
+
+  // Function Grid
+  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
+  gridItem: { 
+    width: '47%', 
+    backgroundColor: '#fff', 
+    paddingVertical: 30, 
     borderRadius: 24, 
     marginBottom: 20, 
     alignItems: 'center', 
@@ -205,4 +261,13 @@ const styles = StyleSheet.create({
     color: '#444', 
     fontSize: 14 
   }
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 15
+  },
+  icon: { fontSize: 28 },
+  gridLabel: { fontWeight: 'bold', color: '#444', fontSize: 14 }
 });
