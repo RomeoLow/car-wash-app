@@ -59,6 +59,13 @@ export default function BookingScreen({ navigation }: BookingScreenProps) {
   const toggleExtra = (id: string) =>
     setExtras(prev => prev.includes(id) ? prev.filter(e => e !== id) : [...prev, id]);
 
+  // When service changes, remove any extras that are now included
+  const handleServiceSelect = (sv: typeof SERVICES[number]) => {
+    setService(sv);
+    if (sv.id === '5') setExtras(prev => prev.filter(e => e !== 'e1' && e !== 'e2'));
+    if (sv.id === '3') setExtras(prev => prev.filter(e => e !== 'e3'));
+  };
+
   const basePrice = service && size ? (service.prices[size] ?? null) : null;
   const extraTotal = size ? extras.reduce((sum, id) => {
     const ex = EXTRAS.find(e => e.id === id);
@@ -111,6 +118,17 @@ export default function BookingScreen({ navigation }: BookingScreenProps) {
 
   // Get selected size info
   const selectedSizeInfo = size ? SIZES.find(sz => sz.key === size) : null;
+
+  // Extras that are already included in the selected service (cannot be added)
+  const includedExtras: string[] = [];
+  if (service?.id === '5') {
+    // Polish includes Interior Wax and Wash Engine
+    includedExtras.push('e1', 'e2');
+  }
+  if (service?.id === '3') {
+    // Water Wax & Fogging Package includes Fogging
+    includedExtras.push('e3');
+  }
 
   return (
     <SafeAreaView style={s.safe}>
@@ -192,7 +210,7 @@ export default function BookingScreen({ navigation }: BookingScreenProps) {
                   service?.id === sv.id && s.cardActive,
                   unavailable && s.cardDim,
                 ]}
-                onPress={() => !unavailable && setService(sv)}
+                onPress={() => !unavailable && handleServiceSelect(sv)}
                 activeOpacity={unavailable ? 1 : 0.8}
               >
                 <Text style={s.cardIcon}>{sv.icon}</Text>
@@ -211,7 +229,8 @@ export default function BookingScreen({ navigation }: BookingScreenProps) {
               <Text style={s.label}>Extra Services</Text>
               {EXTRAS.map(ex => {
                 const price = ex.prices[size as keyof typeof ex.prices];
-                const unavailable = price === null;
+                const included = includedExtras.includes(ex.id);
+                const unavailable = price === null || included;
                 const active = extras.includes(ex.id);
                 return (
                   <TouchableOpacity
@@ -221,9 +240,15 @@ export default function BookingScreen({ navigation }: BookingScreenProps) {
                     activeOpacity={unavailable ? 1 : 0.8}
                   >
                     <Text style={[s.extraName, unavailable && s.dimText]}>{ex.name}</Text>
-                    <Text style={[s.extraPrice, unavailable && s.dimText]}>
-                      {unavailable ? 'N/A' : `+RM ${price}`}
-                    </Text>
+                    {included ? (
+                      <View style={s.includedBadge}>
+                        <Text style={s.includedText}>Included</Text>
+                      </View>
+                    ) : (
+                      <Text style={[s.extraPrice, unavailable && s.dimText]}>
+                        {price === null ? 'N/A' : `+RM ${price}`}
+                      </Text>
+                    )}
                     {active && <Text style={s.check}> ✓</Text>}
                   </TouchableOpacity>
                 );
@@ -305,6 +330,8 @@ const s = StyleSheet.create({
   extraActive: { borderColor: '#34D399', backgroundColor: '#0D2018' },
   extraName: { flex: 1, fontSize: 14, fontWeight: '600', color: '#fff' },
   extraPrice: { fontSize: 14, fontWeight: '700', color: '#9090A8' },
+  includedBadge: { backgroundColor: '#1A2A1A', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1, borderColor: '#34D399' },
+  includedText: { fontSize: 11, fontWeight: '700', color: '#34D399' },
 
   bottom: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: '#0F0F1A', borderTopWidth: 1, borderTopColor: '#1C1C2E', padding: 20, paddingBottom: 32 },
   summary: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
