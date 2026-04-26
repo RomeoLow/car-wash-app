@@ -70,7 +70,11 @@ export default function ProfileScreen({ navigation }: any) {
 
         {/* Header */}
         <View style={s.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
+            <Text style={s.backBtnText}>←</Text>
+          </TouchableOpacity>
           <Text style={s.headerTitle}>My Profile</Text>
+          <View style={{ width: 36 }} />
         </View>
 
         {/* Avatar + Name */}
@@ -163,10 +167,13 @@ const s = StyleSheet.create({
   scroll: { paddingBottom: 60 },
 
   header: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 20, paddingVertical: 16,
     backgroundColor: '#1C1C2E', borderBottomWidth: 1, borderBottomColor: '#2E2E4E',
   },
   headerTitle: { fontSize: 18, fontWeight: '800', color: '#fff' },
+  backBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: '#2E2E4E', alignItems: 'center', justifyContent: 'center' },
+  backBtnText: { color: '#5B8DEF', fontSize: 18, fontWeight: 'bold' },
 
   avatarSection: { alignItems: 'center', paddingVertical: 32 },
   avatar: { width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
