@@ -1,11 +1,13 @@
 // App.tsx
 import React, { useState, useEffect } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, View, StyleSheet } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+
+// Firebase Imports
 import { auth, db } from './firebaseConfig';
-import { onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged, User } from 'firebase/auth'; // Added 'User' type
 import { doc, getDoc } from 'firebase/firestore';
 
 // Screen Imports
@@ -20,7 +22,7 @@ import JobDetailScreen from './src/screens/worker/JobDetailScreen';
 const Stack = createNativeStackNavigator();
 
 export default function App() {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null); // Replaced 'any' with 'User'
   const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -29,16 +31,22 @@ export default function App() {
       if (authenticatedUser) {
         try {
           const userDoc = await getDoc(doc(db, "users", authenticatedUser.uid));
+          
           if (userDoc.exists()) {
-            setRole(userDoc.data().role);
+            // Safely grab the role, fallback to customer if the field is missing
+            setRole(userDoc.data()?.role || 'customer');
           } else {
             setRole('customer');
           }
-          setUser(authenticatedUser);
         } catch (error) {
           console.error("Error fetching user role:", error);
+          setRole('customer'); // Safe fallback on network failure
+        } finally {
+          // Always set the user, even if fetching the role throws an error
+          setUser(authenticatedUser); 
         }
       } else {
+        // Clear state on logout
         setUser(null);
         setRole(null);
       }
@@ -50,7 +58,7 @@ export default function App() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#5B8DEF" />
       </View>
     );
@@ -60,32 +68,38 @@ export default function App() {
     <SafeAreaProvider>
       <NavigationContainer>
         <Stack.Navigator screenOptions={{ headerShown: false }}>
-
-          {/* If Not Logged In */}
+          
+          {/* 1. Unauthenticated Stack */}
           {!user ? (
             <Stack.Screen name="Login" component={LoginScreen} />
-          ) :
+          ) : (
+            
+            /* 2. Authenticated Routes - Grouped purely by Role */
+            <Stack.Group>
+              
+              {/* ADMIN SCREENS */}
+              {role === 'admin' && (
+                <Stack.Screen name="AdminHome" component={AdminScreen} />
+              )}
 
-          /* If Logged In as Admin */
-          role === 'admin' ? (
-            <Stack.Screen name="AdminHome" component={AdminScreen} />
-          ) :
+              {/* WORKER SCREENS (Checking for 'worker' or 'staff') */}
+              {(role === 'worker' || role === 'staff') && (
+                <>
+                  <Stack.Screen name="WorkerHome" component={TaskQueueScreen} />
+                  <Stack.Screen name="JobDetailScreen" component={JobDetailScreen} />
+                </>
+              )}
 
-          /* If Logged In as Worker */
-          role === 'worker' ? (
-            <>
-              <Stack.Screen name="WorkerHome" component={TaskQueueScreen} />
-              <Stack.Screen name="JobDetailScreen" component={JobDetailScreen} />
-            </>
-          ) :
+              {/* CUSTOMER SCREENS (Catch-all default) */}
+              {(role === 'customer' || (role !== 'admin' && role !== 'worker' && role !== 'staff')) && (
+                <>
+                  <Stack.Screen name="BookingScreen" component={BookingScreen} />
+                  <Stack.Screen name="HistoryScreen" component={HistoryScreen} />
+                  <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
+                </>
+              )}
 
-          /* If Logged In as Customer (Default) */
-          (
-            <>
-              <Stack.Screen name="BookingScreen" component={BookingScreen} />
-              <Stack.Screen name="HistoryScreen" component={HistoryScreen} />
-              <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
-            </>
+            </Stack.Group>
           )}
 
         </Stack.Navigator>
@@ -93,3 +107,12 @@ export default function App() {
     </SafeAreaProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1, 
+    justifyContent: 'center', 
+    alignItems: 'center',
+    backgroundColor: '#0D1117' // Added background color to match your dark theme perfectly
+  }
+});
