@@ -1,53 +1,208 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { auth } from '../../../firebaseConfig';
 import { signOut } from 'firebase/auth';
 
-export default function AdminScreen() {
-  const handleLogout = () => signOut(auth);
+// Define the type interface of menu items
+interface MenuItem {
+  id: string;
+  label: string;
+  icon: string;
+  screen: string;
+}
+
+export default function AdminScreen({ navigation }: any) {
+  // Handle logout
+  const handleLogout = () => {
+    signOut(auth).catch((error) => console.error("Logout Error:", error));
+  };
+
+  // Management feature configuration list
+  // Note: The screen string here must match exactly with the Stack.Screen name in your AppNavigator
+  const menuItems: MenuItem[] = [
+    { id: 'revenue', label: 'Daily Revenue', icon: '💰', screen: 'RevenueReports' },
+    { id: 'staff', label: 'Manage Staff', icon: '👥', screen: 'StaffManagement' },
+    { id: 'reports', label: 'Reports', icon: '📊', screen: 'RevenueReports' },
+    { id: 'settings', label: 'Settings', icon: '⚙️', screen: 'ServiceSettings' },
+  ];
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.adminBadge}>ADMIN PANEL</Text>
-        <TouchableOpacity onPress={handleLogout}>
-          <Text style={styles.logoutText}>Logout</Text>
-        </TouchableOpacity>
-      </View>
+    <SafeAreaView style={styles.safe}>
+      <ScrollView 
+        style={styles.container}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.badgeContainer}>
+            <Text style={styles.adminBadge}>ADMIN PANEL</Text>
+          </View>
+          <TouchableOpacity onPress={handleLogout} activeOpacity={0.7}>
+            <Text style={styles.logoutText}>Logout</Text>
+          </TouchableOpacity>
+        </View>
 
-      <Text style={styles.greeting}>Management Dashboard</Text>
+        <Text style={styles.greeting}>Management Dashboard</Text>
 
-      {/* TEAMMATE STARTS HERE: Add Revenue Charts, Staff Management, etc. */}
-      <View style={styles.grid}>
-        <TouchableOpacity style={styles.gridItem}>
-          <Text style={styles.icon}>💰</Text>
-          <Text style={styles.gridLabel}>Daily Revenue</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.gridItem}>
-          <Text style={styles.icon}>👥</Text>
-          <Text style={styles.gridLabel}>Manage Staff</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.gridItem}>
-          <Text style={styles.icon}>📊</Text>
-          <Text style={styles.gridLabel}>Reports</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.gridItem}>
-          <Text style={styles.icon}>⚙️</Text>
-          <Text style={styles.gridLabel}>Settings</Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+        {/* Status Overview Card */}
+        <View style={styles.overviewCard}>
+          <Text style={styles.overviewTitle}>Today's Status</Text>
+          <View style={styles.overviewRow}>
+            <View>
+              <Text style={styles.overviewLabel}>Active Jobs</Text>
+              <Text style={styles.boldText}>8</Text>
+            </View>
+            <View style={styles.divider} />
+            <View>
+              <Text style={styles.overviewLabel}>Staff Online</Text>
+              <Text style={styles.boldText}>3</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Feature Grid Entry */}
+        <View style={styles.grid}>
+          {menuItems.map((item) => (
+            <TouchableOpacity 
+              key={item.id} 
+              style={styles.gridItem}
+              activeOpacity={0.8}
+              onPress={() => {
+                if (item.screen) {
+                  navigation.navigate(item.screen);
+                }
+              }}
+            >
+              <View style={styles.iconContainer}>
+                <Text style={styles.icon}>{item.icon}</Text>
+              </View>
+              <Text style={styles.gridLabel}>{item.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F0F2F5', padding: 20 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 40, marginBottom: 20 },
-  adminBadge: { backgroundColor: '#673AB7', color: '#fff', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 5, fontSize: 12, fontWeight: 'bold' },
-  logoutText: { color: '#F44336', fontWeight: 'bold' },
-  greeting: { fontSize: 26, fontWeight: 'bold', color: '#333', marginBottom: 25 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
-  gridItem: { width: '47%', backgroundColor: '#fff', padding: 25, borderRadius: 20, marginBottom: 20, alignItems: 'center', elevation: 2 },
-  icon: { fontSize: 30, marginBottom: 10 },
-  gridLabel: { fontWeight: '600', color: '#555' }
+  safe: { 
+    flex: 1, 
+    backgroundColor: '#F0F2F5' 
+  },
+  container: { 
+    flex: 1, 
+    paddingHorizontal: 20 
+  },
+  header: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center',
+    marginTop: 15, 
+    marginBottom: 20 
+  },
+  badgeContainer: { 
+    alignSelf: 'flex-start' 
+  },
+  adminBadge: { 
+    backgroundColor: '#673AB7', 
+    color: '#fff', 
+    paddingHorizontal: 12, 
+    paddingVertical: 6, 
+    borderRadius: 8, 
+    fontSize: 12, 
+    fontWeight: 'bold',
+    overflow: 'hidden'
+  },
+  logoutText: { 
+    color: '#F44336', 
+    fontWeight: 'bold', 
+    fontSize: 16 
+  },
+  greeting: { 
+    fontSize: 28, 
+    fontWeight: 'bold', 
+    color: '#1A1A1A', 
+    marginBottom: 20 
+  },
+  
+  // Status Overview Card Styles
+  overviewCard: {
+    backgroundColor: '#673AB7',
+    padding: 20,
+    borderRadius: 24,
+    marginBottom: 25,
+    elevation: 8,
+    shadowColor: '#673AB7',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+  },
+  overviewTitle: { 
+    color: 'rgba(255,255,255,0.7)', 
+    fontSize: 14, 
+    marginBottom: 12,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 1
+  },
+  overviewRow: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-around',
+    alignItems: 'center'
+  },
+  overviewLabel: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 13,
+    marginBottom: 4
+  },
+  boldText: { 
+    color: '#fff',
+    fontWeight: 'bold', 
+    fontSize: 24 
+  },
+  divider: {
+    width: 1,
+    height: 30,
+    backgroundColor: 'rgba(255,255,255,0.2)'
+  },
+
+  // Feature Grid Styles
+  grid: { 
+    flexDirection: 'row', 
+    flexWrap: 'wrap', 
+    justifyContent: 'space-between',
+    paddingBottom: 20
+  },
+  gridItem: { 
+    width: '47%', 
+    backgroundColor: '#fff', 
+    paddingVertical: 25, 
+    borderRadius: 24, 
+    marginBottom: 20, 
+    alignItems: 'center', 
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+  },
+  iconContainer: {
+    backgroundColor: '#F5F3FF',
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12
+  },
+  icon: { 
+    fontSize: 30 
+  },
+  gridLabel: { 
+    fontWeight: 'bold', 
+    color: '#444', 
+    fontSize: 14 
+  }
 });
