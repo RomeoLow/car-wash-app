@@ -1,17 +1,20 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, FlatList } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-// Simulated data: Obtained via API in actual development
+// Simulated trading data: In actual development, this can be obtained through the Firebase API.
 const MOCK_DATA = [
   { id: '1', date: '2026-04-18', amount: 'RM 50', service: 'Full Wash', status: 'Completed' },
   { id: '2', date: '2026-04-18', amount: 'RM 35', service: 'Interior Cleaning', status: 'Completed' },
-  { id: '3', date: '2026-04-17', amount: 'RM 120', service: 'Premium Waxing', status: 'Completed' },];
+  { id: '3', date: '2026-04-17', amount: 'RM 120', service: 'Premium Waxing', status: 'Completed' },
+  { id: '4', date: '2026-04-17', amount: 'RM 45', service: 'Body Wash', status: 'Completed' },
+  { id: '5', date: '2026-04-16', amount: 'RM 80', service: 'Engine Cleaning', status: 'Completed' },
+];
 
 export default function RevenueReportsScreen({ navigation }: any) {
   const [filter, setFilter] = useState('Daily');
 
-  // Render statistic cards
+  // Render statistic card component
   const renderStatCard = (label: string, value: string, color: string) => (
     <View style={styles.statCard}>
       <Text style={styles.statLabel}>{label}</Text>
@@ -21,44 +24,62 @@ export default function RevenueReportsScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={styles.safe}>
-      {/* Header */}
+      {/* Top Navigation Bar */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.7}>
           <Text style={styles.backButton}>← Dashboard</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Revenue Reports</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.container}>
-        {/* 1. Overview Area */}
+      <ScrollView 
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* 1. Overview Data Area */}
         <View style={styles.statsRow}>
           {renderStatCard('Total Revenue', 'RM 2,450', '#2E7D32')}
           {renderStatCard('Total Jobs', '48', '#1976D2')}
         </View>
 
-        {/* 2. Filter (Tabs) */}
+        {/* 2. Filter (Toggle Tabs) */}
         <View style={styles.filterContainer}>
           {['Daily', 'Weekly', 'Monthly'].map((item) => (
             <TouchableOpacity 
               key={item} 
               style={[styles.filterTab, filter === item && styles.activeTab]}
               onPress={() => setFilter(item)}
+              activeOpacity={0.9}
             >
-              <Text style={[styles.filterText, filter === item && styles.activeFilterText]}>{item}</Text>
+              <Text style={[styles.filterText, filter === item && styles.activeFilterText]}>
+                {item}
+              </Text>
             </TouchableOpacity>
           ))}
         </View>
 
-        {/* 3. Detailed List */}
+        {/* 3. Detailed Transaction List */}
         <View style={styles.reportSection}>
-          <Text style={styles.sectionTitle}>Recent Transactions</Text>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Recent Transactions</Text>
+            <TouchableOpacity>
+              <Text style={styles.viewAllText}>View All</Text>
+            </TouchableOpacity>
+          </View>
+
           {MOCK_DATA.map((item) => (
             <View key={item.id} style={styles.transactionItem}>
-              <View>
+              <View style={styles.iconPlaceholder}>
+                <Text style={styles.iconEmoji}>🚗</Text>
+              </View>
+              <View style={styles.transactionInfo}>
                 <Text style={styles.serviceText}>{item.service}</Text>
                 <Text style={styles.dateText}>{item.date}</Text>
               </View>
-              <Text style={styles.amountText}>{item.amount}</Text>
+              <View style={styles.amountContainer}>
+                <Text style={styles.amountText}>{item.amount}</Text>
+                <Text style={styles.statusText}>{item.status}</Text>
+              </View>
             </View>
           ))}
         </View>
@@ -68,7 +89,10 @@ export default function RevenueReportsScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#F8F9FA' },
+  safe: { 
+    flex: 1, 
+    backgroundColor: '#F8F9FA' 
+  },
   header: { 
     flexDirection: 'row', 
     alignItems: 'center', 
@@ -76,47 +100,155 @@ const styles = StyleSheet.create({
     paddingVertical: 15, 
     backgroundColor: '#fff', 
     borderBottomWidth: 1,
-    borderBottomColor: '#EEE'
+    borderBottomColor: '#EEE',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
-  backButton: { color: '#673AB7', fontSize: 16, fontWeight: '600', marginRight: 20 },
-  title: { fontSize: 18, fontWeight: 'bold', color: '#333' },
-  container: { padding: 16 },
+  backButton: { 
+    color: '#673AB7', 
+    fontSize: 16, 
+    fontWeight: 'bold', 
+    marginRight: 20 
+  },
+  title: { 
+    fontSize: 18, 
+    fontWeight: 'bold', 
+    color: '#333' 
+  },
+  container: { 
+    padding: 16 
+  },
   
   // Statistic Card Styles
-  statsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
+  statsRow: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    marginBottom: 20 
+  },
   statCard: { 
     backgroundColor: '#fff', 
     padding: 20, 
-    borderRadius: 12, 
+    borderRadius: 16, 
     width: '48%', 
-    elevation: 3,
+    elevation: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
   },
-  statLabel: { fontSize: 12, color: '#666', marginBottom: 5, fontWeight: '600' },
-  statValue: { fontSize: 20, fontWeight: 'bold' },
+  statLabel: { 
+    fontSize: 12, 
+    color: '#666', 
+    marginBottom: 8, 
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5
+  },
+  statValue: { 
+    fontSize: 22, 
+    fontWeight: 'bold' 
+  },
 
   // Filter Styles
-  filterContainer: { flexDirection: 'row', backgroundColor: '#E0E0E0', borderRadius: 8, padding: 4, marginBottom: 20 },
-  filterTab: { flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: 6 },
-  activeTab: { backgroundColor: '#fff' },
-  filterText: { color: '#666', fontWeight: '500' },
-  activeFilterText: { color: '#673AB7', fontWeight: 'bold' },
+  filterContainer: { 
+    flexDirection: 'row', 
+    backgroundColor: '#E0E0E0', 
+    borderRadius: 12, 
+    padding: 4, 
+    marginBottom: 20 
+  },
+  filterTab: { 
+    flex: 1, 
+    paddingVertical: 10, 
+    alignItems: 'center', 
+    borderRadius: 10 
+  },
+  activeTab: { 
+    backgroundColor: '#fff',
+    elevation: 2,
+  },
+  filterText: { 
+    color: '#666', 
+    fontWeight: '600' 
+  },
+  activeFilterText: { 
+    color: '#673AB7' 
+  },
 
-  // Detailed List Styles
-  reportSection: { backgroundColor: '#fff', borderRadius: 12, padding: 16 },
-  sectionTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 15, color: '#333' },
+  // Transaction list style
+  reportSection: { 
+    backgroundColor: '#fff', 
+    borderRadius: 20, 
+    padding: 20,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20
+  },
+  sectionTitle: { 
+    fontSize: 17, 
+    fontWeight: 'bold', 
+    color: '#333' 
+  },
+  viewAllText: {
+    color: '#673AB7',
+    fontSize: 13,
+    fontWeight: '600'
+  },
   transactionItem: { 
     flexDirection: 'row', 
-    justifyContent: 'space-between', 
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0'
+    borderBottomColor: '#F8F9FA'
   },
-  serviceText: { fontSize: 14, fontWeight: '600', color: '#333' },
-  dateText: { fontSize: 12, color: '#999', marginTop: 2 },
-  amountText: { fontSize: 15, fontWeight: 'bold', color: '#2E7D32' }
+  iconPlaceholder: {
+    width: 45,
+    height: 45,
+    borderRadius: 12,
+    backgroundColor: '#F5F3FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 15
+  },
+  iconEmoji: {
+    fontSize: 20
+  },
+  transactionInfo: {
+    flex: 1
+  },
+  serviceText: { 
+    fontSize: 15, 
+    fontWeight: 'bold', 
+    color: '#333',
+    marginBottom: 4
+  },
+  dateText: { 
+    fontSize: 12, 
+    color: '#999' 
+  },
+  amountContainer: {
+    alignItems: 'flex-end'
+  },
+  amountText: { 
+    fontSize: 16, 
+    fontWeight: 'bold', 
+    color: '#2E7D32' 
+  },
+  statusText: {
+    fontSize: 11,
+    color: '#4CAF50',
+    fontWeight: '600',
+    marginTop: 2
+  }
 });

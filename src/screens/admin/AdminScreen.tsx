@@ -13,12 +13,17 @@ interface MenuItem {
 }
 
 export default function AdminScreen({ navigation }: any) {
-  // Handle logout
+  // Handle logout logic
   const handleLogout = () => {
-    signOut(auth).catch((error) => console.error("Logout Error:", error));
+    signOut(auth)
+      .then(() => {
+        // Logic after successful logout (typically Firebase listener will handle navigation)
+        console.log("Admin logged out");
+      })
+      .catch((error) => console.error("Logout Error:", error));
   };
 
-  // Management feature configuration list
+  // Function menu configuration list
   // Note: The screen string here must match exactly with the Stack.Screen name in your AppNavigator
   const menuItems: MenuItem[] = [
     { id: 'revenue', label: 'Daily Revenue', icon: '💰', screen: 'RevenueReports' },
@@ -33,7 +38,7 @@ export default function AdminScreen({ navigation }: any) {
         style={styles.container}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
+        {/* Top bar: Includes an Admin label and a logout button. */}
         <View style={styles.header}>
           <View style={styles.badgeContainer}>
             <Text style={styles.adminBadge}>ADMIN PANEL</Text>
@@ -45,23 +50,23 @@ export default function AdminScreen({ navigation }: any) {
 
         <Text style={styles.greeting}>Management Dashboard</Text>
 
-        {/* Status Overview Card */}
+        {/* Status Overview Card (Today's Data Summary) */}
         <View style={styles.overviewCard}>
           <Text style={styles.overviewTitle}>Today's Status</Text>
           <View style={styles.overviewRow}>
-            <View>
+            <View style={styles.statBox}>
               <Text style={styles.overviewLabel}>Active Jobs</Text>
               <Text style={styles.boldText}>8</Text>
             </View>
             <View style={styles.divider} />
-            <View>
+            <View style={styles.statBox}>
               <Text style={styles.overviewLabel}>Staff Online</Text>
               <Text style={styles.boldText}>3</Text>
             </View>
           </View>
         </View>
 
-        {/* Feature Grid Entry */}
+        {/* Function Grid Entries */}
         <View style={styles.grid}>
           {menuItems.map((item) => (
             <TouchableOpacity 
@@ -70,6 +75,7 @@ export default function AdminScreen({ navigation }: any) {
               activeOpacity={0.8}
               onPress={() => {
                 if (item.screen) {
+                  // Execute page navigation
                   navigation.navigate(item.screen);
                 }
               }}
@@ -152,6 +158,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     alignItems: 'center'
   },
+  statBox: {
+    alignItems: 'center'
+  },
   overviewLabel: {
     color: 'rgba(255,255,255,0.8)',
     fontSize: 13,
@@ -168,7 +177,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.2)'
   },
 
-  // Feature Grid Styles
+  // Function Grid Styles
   grid: { 
     flexDirection: 'row', 
     flexWrap: 'wrap', 
