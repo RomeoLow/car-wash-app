@@ -7,22 +7,31 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 // Firebase Imports
 import { auth, db } from './firebaseConfig';
-import { onAuthStateChanged, User } from 'firebase/auth'; // Added 'User' type
+import { onAuthStateChanged, User } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 
-// Screen Imports
+// --- Screen Imports ---
 import LoginScreen from './src/screens/auth/LoginScreen';
+
+// Admin Screens
 import AdminScreen from './src/screens/admin/AdminScreen';
+import RevenueReportsScreen from './src/screens/admin/RevenueReportsScreen'; // 新增
+import StaffManagementScreen from './src/screens/admin/StaffManagementScreen'; // 新增
+import ServiceSettingsScreen from './src/screens/admin/ServiceSettingsScreen'; // 新增
+
+// Customer Screens
 import BookingScreen from './src/screens/customer/BookingScreen';
 import HistoryScreen from './src/screens/customer/HistoryScreen';
 import ProfileScreen from './src/screens/customer/ProfileScreen';
+
+// Worker Screens
 import TaskQueueScreen from './src/screens/worker/TaskQueueScreen';
 import JobDetailScreen from './src/screens/worker/JobDetailScreen';
 
 const Stack = createNativeStackNavigator();
 
 export default function App() {
-  const [user, setUser] = useState<User | null>(null); // Replaced 'any' with 'User'
+  const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -33,20 +42,17 @@ export default function App() {
           const userDoc = await getDoc(doc(db, "users", authenticatedUser.uid));
           
           if (userDoc.exists()) {
-            // Safely grab the role, fallback to customer if the field is missing
             setRole(userDoc.data()?.role || 'customer');
           } else {
             setRole('customer');
           }
         } catch (error) {
           console.error("Error fetching user role:", error);
-          setRole('customer'); // Safe fallback on network failure
+          setRole('customer'); 
         } finally {
-          // Always set the user, even if fetching the role throws an error
           setUser(authenticatedUser); 
         }
       } else {
-        // Clear state on logout
         setUser(null);
         setRole(null);
       }
@@ -69,20 +75,26 @@ export default function App() {
       <NavigationContainer>
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           
-          {/* 1. Unauthenticated Stack */}
+          {/* 1. 未登录状态 */}
           {!user ? (
             <Stack.Screen name="Login" component={LoginScreen} />
           ) : (
             
-            /* 2. Authenticated Routes - Grouped purely by Role */
+            /* 2. 已登录状态 - 根据角色分发路由 */
             <Stack.Group>
               
-              {/* ADMIN SCREENS */}
+              {/* --- 管理员路由 (ADMIN) --- */}
               {role === 'admin' && (
-                <Stack.Screen name="AdminHome" component={AdminScreen} />
+                <>
+                  <Stack.Screen name="AdminHome" component={AdminScreen} />
+                  {/* 下面这三行是关键：必须注册，AdminScreen 里的按钮才能跳转 */}
+                  <Stack.Screen name="RevenueReports" component={RevenueReportsScreen} />
+                  <Stack.Screen name="StaffManagement" component={StaffManagementScreen} />
+                  <Stack.Screen name="ServiceSettings" component={ServiceSettingsScreen} />
+                </>
               )}
 
-              {/* WORKER SCREENS (Checking for 'worker' or 'staff') */}
+              {/* --- 员工路由 (WORKER/STAFF) --- */}
               {(role === 'worker' || role === 'staff') && (
                 <>
                   <Stack.Screen name="WorkerHome" component={TaskQueueScreen} />
@@ -90,7 +102,7 @@ export default function App() {
                 </>
               )}
 
-              {/* CUSTOMER SCREENS (Catch-all default) */}
+              {/* --- 客户路由 (CUSTOMER) --- */}
               {(role === 'customer' || (role !== 'admin' && role !== 'worker' && role !== 'staff')) && (
                 <>
                   <Stack.Screen name="BookingScreen" component={BookingScreen} />
@@ -113,6 +125,6 @@ const styles = StyleSheet.create({
     flex: 1, 
     justifyContent: 'center', 
     alignItems: 'center',
-    backgroundColor: '#0D1117' // Added background color to match your dark theme perfectly
+    backgroundColor: '#0D1117' 
   }
 });
