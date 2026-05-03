@@ -44,9 +44,9 @@ export default function AdminScreen({ navigation }: any) {
 
   // Grid menu items with unique accent colors for better scannability
   const menuItems: MenuItem[] = [
-    { id: 'rev', label: 'Revenue', icon: '📈', screen: 'RevenueReports', accent: '#10B981' },
+    { id: 'rev', label: 'Revenue', icon: '💰', screen: 'RevenueReports', accent: '#10B981' },
     { id: 'stf', label: 'Staff List', icon: '👤', screen: 'StaffManagement', accent: '#3B82F6' },
-    { id: 'rpt', label: 'Analytics', icon: '📊', screen: 'RevenueReports', accent: '#8B5CF6' },
+    { id: 'rpt', label: 'Analytics', icon: '📊', screen: 'Analytics', accent: '#8B5CF6' },
     { id: 'set', label: 'Services', icon: '🛠️', screen: 'ServiceSettings', accent: '#64748B' },
   ];
 
