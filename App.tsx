@@ -15,9 +15,10 @@ import LoginScreen from './src/screens/auth/LoginScreen';
 
 // Admin Screens
 import AdminScreen from './src/screens/admin/AdminScreen';
-import RevenueReportsScreen from './src/screens/admin/RevenueReportsScreen'; // 新增
-import StaffManagementScreen from './src/screens/admin/StaffManagementScreen'; // 新增
-import ServiceSettingsScreen from './src/screens/admin/ServiceSettingsScreen'; // 新增
+import AnalyticsScreen from './src/screens/admin/AnalyticsScreen';
+import RevenueReportsScreen from './src/screens/admin/RevenueReportsScreen'; 
+import StaffManagementScreen from './src/screens/admin/StaffManagementScreen'; 
+import ServiceSettingsScreen from './src/screens/admin/ServiceSettingsScreen'; 
 
 // Customer Screens
 import BookingScreen from './src/screens/customer/BookingScreen';
@@ -90,6 +91,7 @@ export default function App() {
                   {/* The following three lines are crucial: they must be registered for the buttons in AdminScreen to work */}
                   <Stack.Screen name="RevenueReports" component={RevenueReportsScreen} />
                   <Stack.Screen name="StaffManagement" component={StaffManagementScreen} />
+                  <Stack.Screen name="Analytics" component={AnalyticsScreen} />
                   <Stack.Screen name="ServiceSettings" component={ServiceSettingsScreen} />
                 </>
               )}
