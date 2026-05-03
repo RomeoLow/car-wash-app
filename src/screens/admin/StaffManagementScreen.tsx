@@ -1,28 +1,64 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, TextInput, ScrollView, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, TextInput, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-// Simulated employee data
-const MOCK_STAFF = [
-  { id: '1', name: 'Ali Bin Abu', role: 'Full-time Washer', status: 'On Duty' },
-  { id: '2', name: 'John Tan', role: 'Part-time Washer', status: 'Off Duty' },
-  { id: '3', name: 'Siti Aminah', role: 'Supervisor', status: 'On Duty' },
-];
+// Firebase Imports[cite: 15]
+import { 
+  collection, query, where, onSnapshot, 
+  addDoc, serverTimestamp 
+} from 'firebase/firestore';
+import { db } from '../../../firebaseConfig';
 
 export default function StaffManagementScreen({ navigation }: any) {
   const [activeTab, setActiveTab] = useState('list'); // 'list' or 'add'
   const [newName, setNewName] = useState('');
   const [newRole, setNewRole] = useState('');
+  const [staffList, setStaffList] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const handleRegister = () => {
+  // 1. Fetch Staff with Real-time Listener[cite: 15]
+  useEffect(() => {
+    // Filter to only get users with the 'worker' role[cite: 15]
+    const q = query(collection(db, 'users'), where('role', '==', 'worker'));
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const staff = snapshot.docs.map(doc => ({ 
+        id: doc.id, 
+        ...doc.data() 
+      }));
+      setStaffList(staff);
+      setLoading(false);
+    }, (error) => {
+      console.error("Error fetching staff:", error);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // 2. Register New Staff to Firestore[cite: 15]
+  const handleRegister = async () => {
     if (!newName || !newRole) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
-    Alert.alert('Success', `${newName} has been registered!`);
-    setNewName('');
-    setNewRole('');
-    setActiveTab('list');
+    
+    try {
+      await addDoc(collection(db, 'users'), {
+        displayName: newName,
+        role: 'worker', // Base role for navigation control[cite: 6, 15]
+        workerRole: newRole, // Specific job title[cite: 15]
+        status: 'Off Duty', // Default status for new staff[cite: 15]
+        createdAt: serverTimestamp() // Audit trail[cite: 15]
+      });
+      
+      Alert.alert('Success', `${newName} has been registered!`);
+      setNewName('');
+      setNewRole('');
+      setActiveTab('list');
+    } catch (error) {
+      console.error("Registration error:", error);
+      Alert.alert('Error', 'Failed to register staff.');
+    }
   };
 
   return (
@@ -53,26 +89,41 @@ export default function StaffManagementScreen({ navigation }: any) {
 
       <View style={styles.container}>
         {activeTab === 'list' ? (
-          /* 1. Staff List Section */
-          <FlatList
-            data={MOCK_STAFF}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <View style={styles.staffCard}>
-                <View style={styles.staffInfo}>
-                  <Text style={styles.staffName}>{item.name}</Text>
-                  <Text style={styles.staffRole}>{item.role}</Text>
+          /* Staff List Section */
+          loading ? (
+            <ActivityIndicator size="large" color="#673AB7" style={{ marginTop: 50 }} />
+          ) : (
+            <FlatList
+              data={staffList}
+              keyExtractor={(item) => item.id}
+              showsVerticalScrollIndicator={false}
+              renderItem={({ item }) => (
+                <View style={styles.staffCard}>
+                  <View style={styles.staffInfo}>
+                    <Text style={styles.staffName}>{item.displayName}</Text>
+                    <Text style={styles.staffRole}>{item.workerRole}</Text>
+                  </View>
+                  {/* Dynamic Status Badge[cite: 15] */}
+                  <View style={[
+                    styles.statusBadge, 
+                    { backgroundColor: item.status === 'On Duty' ? '#E8F5E9' : '#FFEBEE' }
+                  ]}>
+                    <Text style={[
+                      styles.statusText, 
+                      { color: item.status === 'On Duty' ? '#2E7D32' : '#C62828' }
+                    ]}>
+                      {item.status || 'Off Duty'}
+                    </Text>
+                  </View>
                 </View>
-                <View style={[styles.statusBadge, { backgroundColor: item.status === 'On Duty' ? '#E8F5E9' : '#FFEBEE' }]}>
-                  <Text style={[styles.statusText, { color: item.status === 'On Duty' ? '#2E7D32' : '#C62828' }]}>
-                    {item.status}
-                  </Text>
-                </View>
-              </View>
-            )}
-          />
+              )}
+              ListEmptyComponent={
+                <Text style={styles.emptyText}>No workers registered yet.</Text>
+              }
+            />
+          )
         ) : (
-          /* 2. Registration Form Section */
+          /* Registration Form Section[cite: 15] */
           <ScrollView contentContainerStyle={styles.form}>
             <Text style={styles.label}>Full Name</Text>
             <TextInput 
@@ -82,7 +133,7 @@ export default function StaffManagementScreen({ navigation }: any) {
               onChangeText={setNewName}
             />
 
-            <Text style={styles.label}>Role</Text>
+            <Text style={styles.label}>Worker Role</Text>
             <TextInput 
               style={styles.input} 
               placeholder="e.g. Washer / Supervisor" 
@@ -112,17 +163,12 @@ const styles = StyleSheet.create({
   },
   backButton: { color: '#673AB7', fontSize: 16, fontWeight: 'bold', marginRight: 20 },
   title: { fontSize: 20, fontWeight: 'bold', color: '#333' },
-
-  // Tab Styles
   tabContainer: { flexDirection: 'row', backgroundColor: '#fff', padding: 10 },
   tab: { flex: 1, paddingVertical: 10, alignItems: 'center', borderBottomWidth: 2, borderBottomColor: 'transparent' },
   activeTab: { borderBottomColor: '#673AB7' },
   tabText: { color: '#888', fontWeight: '600' },
   activeTabText: { color: '#673AB7' },
-
   container: { flex: 1, padding: 20 },
-
-  // List Styles
   staffCard: { 
     flexDirection: 'row', 
     backgroundColor: '#fff', 
@@ -137,8 +183,7 @@ const styles = StyleSheet.create({
   staffRole: { fontSize: 14, color: '#666', marginTop: 2 },
   statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
   statusText: { fontSize: 12, fontWeight: 'bold' },
-
-  // Form Styles
+  emptyText: { textAlign: 'center', marginTop: 50, color: '#999' },
   form: { paddingBottom: 20 },
   label: { fontSize: 14, fontWeight: 'bold', color: '#444', marginBottom: 8 },
   input: { 
