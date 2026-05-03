@@ -75,26 +75,26 @@ export default function App() {
       <NavigationContainer>
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           
-          {/* 1. 未登录状态 */}
+          {/* 1. Not logged in. */}
           {!user ? (
             <Stack.Screen name="Login" component={LoginScreen} />
           ) : (
             
-            /* 2. 已登录状态 - 根据角色分发路由 */
+            /* 2. Logged in - Routes distributed based on role. */
             <Stack.Group>
               
-              {/* --- 管理员路由 (ADMIN) --- */}
+              {/* --- Admin routing. (ADMIN) --- */}
               {role === 'admin' && (
                 <>
                   <Stack.Screen name="AdminHome" component={AdminScreen} />
-                  {/* 下面这三行是关键：必须注册，AdminScreen 里的按钮才能跳转 */}
+                  {/* The following three lines are crucial: they must be registered for the buttons in AdminScreen to work */}
                   <Stack.Screen name="RevenueReports" component={RevenueReportsScreen} />
                   <Stack.Screen name="StaffManagement" component={StaffManagementScreen} />
                   <Stack.Screen name="ServiceSettings" component={ServiceSettingsScreen} />
                 </>
               )}
 
-              {/* --- 员工路由 (WORKER/STAFF) --- */}
+              {/* --- Worker/Staff routing. (WORKER/STAFF) --- */}
               {(role === 'worker' || role === 'staff') && (
                 <>
                   <Stack.Screen name="WorkerHome" component={TaskQueueScreen} />
@@ -102,7 +102,7 @@ export default function App() {
                 </>
               )}
 
-              {/* --- 客户路由 (CUSTOMER) --- */}
+              {/* --- Customer routing. (CUSTOMER) --- */}
               {(role === 'customer' || (role !== 'admin' && role !== 'worker' && role !== 'staff')) && (
                 <>
                   <Stack.Screen name="BookingScreen" component={BookingScreen} />
