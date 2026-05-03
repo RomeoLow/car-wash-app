@@ -70,7 +70,7 @@ export default function ServiceSettingsScreen({ navigation }: any) {
         let collectionName = '';
         if (item.category === 'sizes') collectionName = 'sizes';
         else if (item.category === 'services') collectionName = 'services';
-        else collectionName = 'extraServices';
+        else if (item.category === 'extras') collectionName = 'extras';
 
         const docRef = doc(db, collectionName, item.id);
         await setDoc(docRef, {
