@@ -25,6 +25,9 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
+  
+  // NEW: State to toggle password visibility
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleAuth = async () => {
     // Basic Validation
@@ -65,8 +68,6 @@ export default function LoginScreen() {
       } else {
         // 2. Login Logic
         await signInWithEmailAndPassword(auth, email.trim(), password);
-        // Note: No navigation needed here! 
-        // Your App.tsx listener will detect the login and swap screens.
       }
     } catch (error: any) {
       // Clean up Firebase error messages for the user
@@ -115,14 +116,23 @@ export default function LoginScreen() {
           placeholderTextColor="#999"
         />
 
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          placeholderTextColor="#999"
-        />
+        {/* NEW: Password Input Container with Eye Toggle */}
+        <View style={styles.passwordContainer}>
+          <TextInput
+            style={styles.passwordInput}
+            placeholder="Password"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry={!showPassword} // Toggles based on state
+            placeholderTextColor="#999"
+          />
+          <TouchableOpacity
+            style={styles.eyeButton}
+            onPress={() => setShowPassword(!showPassword)}
+          >
+            <Text style={styles.eyeText}>{showPassword ? '🙈' : '👁️'}</Text>
+          </TouchableOpacity>
+        </View>
 
         <TouchableOpacity
           style={[styles.button, loading && { backgroundColor: '#B0BEC5' }]}
@@ -176,6 +186,7 @@ const styles = StyleSheet.create({
     marginBottom: 30,
     marginTop: 10
   },
+  // Standard input style (kept for Name and Email)
   input: {
     borderWidth: 1,
     borderColor: '#ddd',
@@ -185,6 +196,32 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#000'
   },
+  
+  // NEW: Password container and input styles to fit the eye icon perfectly
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 10,
+    marginBottom: 15,
+    backgroundColor: '#fff',
+  },
+  passwordInput: {
+    flex: 1,
+    padding: 15,
+    fontSize: 16,
+    color: '#000',
+  },
+  eyeButton: {
+    paddingHorizontal: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  eyeText: {
+    fontSize: 18,
+  },
+  
   button: {
     backgroundColor: '#2196F3',
     padding: 18,
