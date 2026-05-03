@@ -14,23 +14,23 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 const DEFAULT_PRICING = {
   services: [
-    { id: '1', icon: '🚿', name: 'Normal Wash',                 basePrice: 12, color: '#5B8DEF' },
-    { id: '2', icon: '✨', name: 'Water Wax',                   basePrice: 25, color: '#A78BFA' },
-    { id: '3', icon: '🌫️', name: 'Water Wax & Fogging Package', basePrice: 45, color: '#34D399' },
-    { id: '4', icon: '🪣', name: 'Wax',                         basePrice: 120, color: '#FB923C' },
-    { id: '5', icon: '💎', name: 'Polish',                       basePrice: 300, color: '#F472B6' },
+    { id: '1', name: 'Basic Wash', icon: '🧽', color: '#5B8DEF', basePrice: 10 },
+    { id: '2', name: 'Deluxe Wash', icon: '💦', color: '#34D399', basePrice: 15 },
+    { id: '3', name: 'Premium Wash', icon: '✨', color: '#F59E0B', basePrice: 20 },
+    { id: '4', name: 'Wax', icon: '🌟', color: '#8B5CF6', basePrice: 25 },
+    { id: '5', name: 'Full Service', icon: '🚗', color: '#EF4444', basePrice: 30 },
   ],
   extras: [
-    { id: 'e1', name: 'Interior Wax', price: 50 },
-    { id: 'e2', name: 'Wash Engine',  price: 25 },
-    { id: 'e3', name: 'Fogging',      price: 25 },
+    { id: 'e1', name: 'Interior Clean', price: 5 },
+    { id: 'e2', name: 'Tire Shine', price: 3 },
+    { id: 'e3', name: 'Engine Wash', price: 10 },
   ],
   sizeIncrements: {
     S: 0,
-    M: 3,
-    L: 6,
-    XL: 8,
-    XXL: 18,
+    M: 2,
+    L: 4,
+    XL: 6,
+    XXL: 8,
   },
 };
 
@@ -187,7 +187,6 @@ export default function BookingScreen({ navigation }: BookingScreenProps) {
         </View>
 
         <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
-          <Text style={s.pageTitle}>New Booking</Text>
 
           {/* Plate */}
           <Text style={s.label}>Car Plate Number</Text>
@@ -247,7 +246,13 @@ export default function BookingScreen({ navigation }: BookingScreenProps) {
                 <Text style={s.cardIcon}>{sv.icon}</Text>
                 <Text style={[s.cardName, unavailable && s.dimText]}>{sv.name}</Text>
                 <Text style={[s.cardPrice, unavailable && s.dimText]}>
-                  {unavailable ? 'N/A' : size ? `RM ${price}` : '—'}
+                  {unavailable
+                    ? 'N/A'
+                    : !size
+                    ? '—'
+                    : size === 'S'
+                    ? `RM ${sv.basePrice}`
+                    : `RM ${sv.basePrice}+${getSizeIncrement(size)}`}
                 </Text>
                 {service?.id === sv.id && <Text style={s.check}>✓</Text>}
               </TouchableOpacity>
@@ -322,9 +327,9 @@ const s = StyleSheet.create({
   profileBtnText: { fontSize: 16 },
   logoutBtn: { paddingVertical: 4, paddingHorizontal: 10, borderRadius: 8, backgroundColor: '#2E1A1A' },
   logoutText: { color: '#F87171', fontWeight: 'bold', fontSize: 13 },
-  banner: { paddingVertical: 18, paddingHorizontal: 20, backgroundColor: '#5B8DEF' },
-  welcome: { fontSize: 20, fontWeight: 'bold', color: '#fff' },
-  subtitle: { fontSize: 13, color: '#D1E4FF', marginTop: 3 },
+  banner: { paddingVertical: 10, paddingHorizontal: 20, backgroundColor: '#5B8DEF' },
+  welcome: { fontSize: 15, fontWeight: 'bold', color: '#fff' },
+  subtitle: { fontSize: 11, color: '#D1E4FF' },
 
   pageTitle: { fontSize: 22, fontWeight: '800', color: '#fff', marginBottom: 4 },
   scroll: { padding: 20, paddingBottom: 180 },
