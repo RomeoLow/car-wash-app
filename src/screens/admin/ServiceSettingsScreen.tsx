@@ -10,11 +10,11 @@ interface PriceItem {
   id: string;
   name: string;
   price: string;
-  category: 'size' | 'service' | 'extra'; // Used to track which collection it belongs to
+  category: 'sizes' | 'services' | 'extras'; // Used to track which collection it belongs to
 }
 
 export default function ServiceSettingsScreen({ navigation }: any) {
-  const [activeTab, setActiveTab] = useState<'size' | 'service' | 'extra'>('size');
+  const [activeTab, setActiveTab] = useState<'sizes' | 'services' | 'extras'>('sizes');
   const [items, setItems] = useState<PriceItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -26,21 +26,21 @@ export default function ServiceSettingsScreen({ navigation }: any) {
         setLoading(true);
         
         // Fetch Car Sizes
-        const sizeSnap = await getDocs(collection(db, 'carSizes'));
+        const sizeSnap = await getDocs(collection(db, 'sizes'));
         const sizes = sizeSnap.docs.map(d => ({
-          id: d.id, name: d.data().name, price: d.data().price.toString(), category: 'size' as const
+          id: d.id, name: d.data().name, price: d.data().price.toString(), category: 'sizes' as const
         }));
 
         // Fetch Main Services
         const serviceSnap = await getDocs(collection(db, 'services'));
         const services = serviceSnap.docs.map(d => ({
-          id: d.id, name: d.data().name, price: d.data().price.toString(), category: 'service' as const
+          id: d.id, name: d.data().name, price: d.data().price.toString(), category: 'services' as const
         }));
 
         // Fetch Extra Add-ons
-        const extraSnap = await getDocs(collection(db, 'extraServices'));
+        const extraSnap = await getDocs(collection(db, 'extras'));
         const extras = extraSnap.docs.map(d => ({
-          id: d.id, name: d.data().name, price: d.data().price.toString(), category: 'extra' as const
+          id: d.id, name: d.data().name, price: d.data().price.toString(), category: 'extras' as const
         }));
 
         // Combine all into a single state for easy management
@@ -68,8 +68,8 @@ export default function ServiceSettingsScreen({ navigation }: any) {
       for (const item of items) {
         // Determine target collection based on the category
         let collectionName = '';
-        if (item.category === 'size') collectionName = 'carSizes';
-        else if (item.category === 'service') collectionName = 'services';
+        if (item.category === 'sizes') collectionName = 'sizes';
+        else if (item.category === 'services') collectionName = 'services';
         else collectionName = 'extraServices';
 
         const docRef = doc(db, collectionName, item.id);
@@ -118,9 +118,9 @@ export default function ServiceSettingsScreen({ navigation }: any) {
       {/* Tabs Navigation */}
       <View style={styles.tabBar}>
         {[
-          { id: 'size', label: 'Car Sizes' },
-          { id: 'service', label: 'Services' },
-          { id: 'extra', label: 'Extras' }
+          { id: 'sizes', label: 'Car Sizes' },
+          { id: 'services', label: 'Services' },
+          { id: 'extras', label: 'Extras' }
         ].map((tab) => (
           <TouchableOpacity 
             key={tab.id}
