@@ -26,7 +26,7 @@ export default function ServiceSettingsScreen({ navigation }: any) {
         setLoading(true);
         
         // Fetch Car Sizes
-        const sizeSnap = await getDocs(collection(db, 'carSizes'));
+        const sizeSnap = await getDocs(collection(db, 'sizes'));
         const sizes = sizeSnap.docs.map(d => ({
           id: d.id, name: d.data().name, price: d.data().price.toString(), category: 'sizes' as const
         }));
@@ -38,7 +38,7 @@ export default function ServiceSettingsScreen({ navigation }: any) {
         }));
 
         // Fetch Extra Add-ons
-        const extraSnap = await getDocs(collection(db, 'extraServices'));
+        const extraSnap = await getDocs(collection(db, 'extras'));
         const extras = extraSnap.docs.map(d => ({
           id: d.id, name: d.data().name, price: d.data().price.toString(), category: 'extras' as const
         }));
@@ -68,7 +68,7 @@ export default function ServiceSettingsScreen({ navigation }: any) {
       for (const item of items) {
         // Determine target collection based on the category
         let collectionName = '';
-        if (item.category === 'sizes') collectionName = 'carSizes';
+        if (item.category === 'sizes') collectionName = 'sizes';
         else if (item.category === 'services') collectionName = 'services';
         else collectionName = 'extraServices';
 
