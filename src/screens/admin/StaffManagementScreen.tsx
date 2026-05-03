@@ -128,7 +128,7 @@ export default function StaffManagementScreen({ navigation }: any) {
             <Text style={styles.label}>Full Name</Text>
             <TextInput 
               style={styles.input} 
-              placeholder="e.g. Muhammad Ahmad" 
+              placeholder="e.g. Ali" 
               value={newName}
               onChangeText={setNewName}
             />
