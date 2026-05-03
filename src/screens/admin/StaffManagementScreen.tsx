@@ -17,8 +17,7 @@ export default function StaffManagementScreen({ navigation }: any) {
 
   // 1. Fetch Staff with Real-time Listener[cite: 15]
   useEffect(() => {
-    // Filter to only get users with the 'worker' role[cite: 15]
-    const q = query(collection(db, 'users'), where('role', '==', 'worker'));
+    const q = query(collection(db, 'users'), where('role', 'in', ['worker', 'staff']));
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const staff = snapshot.docs.map(doc => ({ 
