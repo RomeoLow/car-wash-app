@@ -1,217 +1,177 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { auth } from '../../../firebaseConfig';
+import { auth, db } from '../../../firebaseConfig';
 import { signOut } from 'firebase/auth';
+import { collection, query, where, onSnapshot } from 'firebase/firestore'; // Firestore real-time updates[cite: 5]
 
-// Define the type interface of menu items
+// Define the structure for dashboard menu items
 interface MenuItem {
   id: string;
   label: string;
   icon: string;
   screen: string;
+  accent: string;
 }
 
 export default function AdminScreen({ navigation }: any) {
-  // Handle logout logic
+  // States for live operational metrics[cite: 5, 11]
+  const [pendingCount, setPendingCount] = useState(0);
+  const [washingCount, setWashingCount] = useState(0);
+
+  // Sync with Firestore bookings collection[cite: 5]
+  useEffect(() => {
+    // Filter for jobs currently in the system but not finished
+    const q = query(
+      collection(db, 'bookings'),
+      where('status', 'in', ['Pending', 'Washing'])
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const docs = snapshot.docs.map(d => d.data());
+      // Split counts based on status to give Admin better oversight[cite: 11]
+      setPendingCount(docs.filter(d => d.status === 'Pending').length);
+      setWashingCount(docs.filter(d => d.status === 'Washing').length);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Standard sign out function[cite: 1, 6]
   const handleLogout = () => {
-    signOut(auth)
-      .then(() => {
-        // Logic after successful logout (typically Firebase listener will handle navigation)
-        console.log("Admin logged out");
-      })
-      .catch((error) => console.error("Logout Error:", error));
+    signOut(auth).catch((error) => console.error("Logout Error:", error));
   };
 
-  // Function menu configuration list
-  // Note: The screen string here must match exactly with the Stack.Screen name in your AppNavigator
+  // Grid menu items with unique accent colors for better scannability
   const menuItems: MenuItem[] = [
-    { id: 'revenue', label: 'Daily Revenue', icon: '💰', screen: 'RevenueReports' },
-    { id: 'staff', label: 'Manage Staff', icon: '👥', screen: 'StaffManagement' },
-    { id: 'reports', label: 'Reports', icon: '📊', screen: 'RevenueReports' },
-    { id: 'settings', label: 'Settings', icon: '⚙️', screen: 'ServiceSettings' },
+    { id: 'rev', label: 'Revenue', icon: '📈', screen: 'RevenueReports', accent: '#10B981' },
+    { id: 'stf', label: 'Staff List', icon: '👤', screen: 'StaffManagement', accent: '#3B82F6' },
+    { id: 'rpt', label: 'Analytics', icon: '📊', screen: 'RevenueReports', accent: '#8B5CF6' },
+    { id: 'set', label: 'Services', icon: '🛠️', screen: 'ServiceSettings', accent: '#64748B' },
   ];
 
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView 
-        style={styles.container}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Top bar: Includes an Admin label and a logout button. */}
+      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+        
+        {/* Header: Admin Identity and Logout[cite: 1] */}
         <View style={styles.header}>
-          <View style={styles.badgeContainer}>
-            <Text style={styles.adminBadge}>ADMIN PANEL</Text>
+          <View style={styles.adminTag}>
+            <View style={styles.dot} />
+            <Text style={styles.adminTagText}>SYSTEM ADMINISTRATOR</Text>
           </View>
-          <TouchableOpacity onPress={handleLogout} activeOpacity={0.7}>
-            <Text style={styles.logoutText}>Logout</Text>
+          <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
+            <Text style={styles.logoutText}>Sign Out</Text>
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.greeting}>Management Dashboard</Text>
+        <Text style={styles.welcomeTitle}>Operational Info</Text>
 
-        {/* Status Overview Card (Today's Data Summary) */}
-        <View style={styles.overviewCard}>
-          <Text style={styles.overviewTitle}>Today's Status</Text>
-          <View style={styles.overviewRow}>
-            <View style={styles.statBox}>
-              <Text style={styles.overviewLabel}>Active Jobs</Text>
-              <Text style={styles.boldText}>8</Text>
+        {/* Dashboard Cards: Using a Slate-to-Blue Gradient look */}
+        <View style={styles.mainCard}>
+          <Text style={styles.cardHeader}>Current Workshop Load</Text>
+          <View style={styles.statsRow}>
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>{pendingCount}</Text>
+              <Text style={styles.statLabel}>Pending</Text>
             </View>
-            <View style={styles.divider} />
-            <View style={styles.statBox}>
-              <Text style={styles.overviewLabel}>Staff Online</Text>
-              <Text style={styles.boldText}>3</Text>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={[styles.statValue, { color: '#60A5FA' }]}>{washingCount}</Text>
+              <Text style={styles.statLabel}>In-Progress</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>3</Text>
+              <Text style={styles.statLabel}>Active Staff</Text>
             </View>
           </View>
         </View>
 
-        {/* Function Grid Entries */}
+        {/* Action Grid */}
+        <Text style={styles.sectionTitle}>Management Tools</Text>
         <View style={styles.grid}>
           {menuItems.map((item) => (
             <TouchableOpacity 
               key={item.id} 
-              style={styles.gridItem}
-              activeOpacity={0.8}
-              onPress={() => {
-                if (item.screen) {
-                  // Execute page navigation
-                  navigation.navigate(item.screen);
-                }
-              }}
+              style={styles.gridCard}
+              activeOpacity={0.7}
+              onPress={() => navigation.navigate(item.screen)}
             >
-              <View style={styles.iconContainer}>
-                <Text style={styles.icon}>{item.icon}</Text>
+              <View style={[styles.iconCircle, { backgroundColor: item.accent + '15' }]}>
+                <Text style={styles.gridIcon}>{item.icon}</Text>
               </View>
-              <Text style={styles.gridLabel}>{item.label}</Text>
+              <Text style={styles.gridText}>{item.label}</Text>
+              <View style={[styles.indicator, { backgroundColor: item.accent }]} />
             </TouchableOpacity>
           ))}
         </View>
+
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { 
-    flex: 1, 
-    backgroundColor: '#F0F2F5' 
-  },
-  container: { 
-    flex: 1, 
-    paddingHorizontal: 20 
-  },
+  safe: { flex: 1, backgroundColor: '#F1F5F9' }, // Light Slate background for Admin
+  container: { flex: 1, paddingHorizontal: 20 },
+  
+  // Header Styles
   header: { 
     flexDirection: 'row', 
     justifyContent: 'space-between', 
-    alignItems: 'center',
-    marginTop: 15, 
-    marginBottom: 20 
+    alignItems: 'center', 
+    marginVertical: 20 
   },
-  badgeContainer: { 
-    alignSelf: 'flex-start' 
-  },
-  adminBadge: { 
-    backgroundColor: '#673AB7', 
-    color: '#fff', 
-    paddingHorizontal: 12, 
+  adminTag: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    backgroundColor: '#334155', 
+    paddingHorizontal: 10, 
     paddingVertical: 6, 
-    borderRadius: 8, 
-    fontSize: 12, 
-    fontWeight: 'bold',
-    overflow: 'hidden'
+    borderRadius: 6 
   },
-  logoutText: { 
-    color: '#F44336', 
-    fontWeight: 'bold', 
-    fontSize: 16 
-  },
-  greeting: { 
-    fontSize: 28, 
-    fontWeight: 'bold', 
-    color: '#1A1A1A', 
-    marginBottom: 20 
-  },
-  
-  // Status Overview Card Styles
-  overviewCard: {
-    backgroundColor: '#673AB7',
-    padding: 20,
-    borderRadius: 24,
-    marginBottom: 25,
-    elevation: 8,
-    shadowColor: '#673AB7',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
-  },
-  overviewTitle: { 
-    color: 'rgba(255,255,255,0.7)', 
-    fontSize: 14, 
-    marginBottom: 12,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 1
-  },
-  overviewRow: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-around',
-    alignItems: 'center'
-  },
-  statBox: {
-    alignItems: 'center'
-  },
-  overviewLabel: {
-    color: 'rgba(255,255,255,0.8)',
-    fontSize: 13,
-    marginBottom: 4
-  },
-  boldText: { 
-    color: '#fff',
-    fontWeight: 'bold', 
-    fontSize: 24 
-  },
-  divider: {
-    width: 1,
-    height: 30,
-    backgroundColor: 'rgba(255,255,255,0.2)'
-  },
+  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#10B981', marginRight: 6 },
+  adminTagText: { color: '#F1F5F9', fontSize: 10, fontWeight: '800', letterSpacing: 0.5 },
+  logoutBtn: { padding: 4 },
+  logoutText: { color: '#64748B', fontWeight: '600', fontSize: 14 },
 
-  // Function Grid Styles
-  grid: { 
-    flexDirection: 'row', 
-    flexWrap: 'wrap', 
-    justifyContent: 'space-between',
-    paddingBottom: 20
+  welcomeTitle: { fontSize: 24, fontWeight: '800', color: '#1E293B', marginBottom: 20 },
+  sectionTitle: { fontSize: 12, fontWeight: '700', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 16 },
+
+  // Operational Card
+  mainCard: { 
+    backgroundColor: '#1E293B', 
+    borderRadius: 20, 
+    padding: 20, 
+    marginBottom: 30,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 5
   },
-  gridItem: { 
+  cardHeader: { color: '#94A3B8', fontSize: 12, fontWeight: '600', marginBottom: 15 },
+  statsRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  statItem: { alignItems: 'center', flex: 1 },
+  statValue: { fontSize: 26, fontWeight: '900', color: '#fff', marginBottom: 2 },
+  statLabel: { fontSize: 11, color: '#64748B', fontWeight: '600' },
+  statDivider: { width: 1, height: 30, backgroundColor: '#334155' },
+
+  // Grid Menu
+  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
+  gridCard: { 
     width: '47%', 
     backgroundColor: '#fff', 
-    paddingVertical: 25, 
-    borderRadius: 24, 
-    marginBottom: 20, 
-    alignItems: 'center', 
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-  },
-  iconContainer: {
-    backgroundColor: '#F5F3FF',
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    justifyContent: 'center',
+    borderRadius: 16, 
+    padding: 20, 
+    marginBottom: 16, 
     alignItems: 'center',
-    marginBottom: 12
+    position: 'relative',
+    overflow: 'hidden'
   },
-  icon: { 
-    fontSize: 30 
-  },
-  gridLabel: { 
-    fontWeight: 'bold', 
-    color: '#444', 
-    fontSize: 14 
-  }
+  iconCircle: { width: 50, height: 50, borderRadius: 25, justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
+  gridIcon: { fontSize: 24 },
+  gridText: { fontSize: 14, fontWeight: '700', color: '#334155' },
+  indicator: { position: 'absolute', bottom: 0, left: '40%', right: '40%', height: 3, borderTopLeftRadius: 3, borderTopRightRadius: 3 }
 });
